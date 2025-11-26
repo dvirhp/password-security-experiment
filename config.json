@@ -1,0 +1,20 @@
+{
+  "hash_mode": "sha256",
+
+  "hash_params": {
+    "sha256": { "salt_length": 16 },
+    "bcrypt": { "cost": 12 },
+    "argon2id": { "time": 1, "memory": 65536, "parallelism": 1 }
+  },
+
+  "pepper": "__ENV__",
+
+  "group_seed": "exp_sha256_base",
+
+  "protections": {
+    "rate_limit_enabled": false,
+    "lockout_enabled": false,
+    "captcha_enabled": false,
+    "totp_enabled": false
+  }
+}
