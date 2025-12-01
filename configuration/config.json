@@ -1,0 +1,32 @@
+{
+  "hash_mode": "sha256",
+
+  "hash_parameters": {
+    "sha256": { "salt_length": 16 },
+    "bcrypt": { "cost": 12 },
+    "argon2id": { "time": 1, "memory": 65536, "parallelism": 1 }
+  },
+
+  "group_seed": "137379782",
+
+  "protections": {
+    "pepper_enabled": false,
+    "rate_limit_enabled": false,
+    "lockout_enabled": false,
+    "captcha_enabled": false,
+    "totp_enabled": false
+  },
+
+  "protections_parameters": {
+    "rate_limit_parameters": { "tokens": 999, "refill_rate_tps": 1 },
+    "lockout_parameters": { "tokens": 999, "duration_mm": 15 },
+    "captcha_parameters": { "tokens": 15 },
+    "totp_parameters": { "number_of_users": 5, "length": 5, "period_ss": 30 }
+  },
+
+  "password_parameters": {
+    "weak": { "min_length": 4, "max_length": 6, "include_upper": false, "include_digits": true },
+    "medium": { "min_length": 8, "max_length": 12, "include_upper": true, "include_digits": true },
+    "strong": { "min_length": 14, "max_length": 20, "include_upper": true, "include_digits": true, "include_punctuation": true }
+  }
+}
