@@ -2,7 +2,7 @@
 Configuration handler.
 
 This module loads and validates configuration data, including:
-    - the active hash mode and its associated parameters
+    - the active hashed mode and its associated parameters
     - enabled or disabled protection mechanisms (e.g., rate limiting, lockouts, CAPTCHA, TOTP)
 
 It centralizes all configuration logic to ensure consistent and secure behavior across the system.
@@ -38,9 +38,10 @@ class Config:
     def hash_parameters(self) -> dict:
         return self._data["hash_parameters"]
 
-    def get_hash_params(self) -> dict:
-        """Return params for the currently configured hash mode."""
-        mode = self.hash_mode
+    def get_hash_params(self, mode=None) -> dict:
+        """Return params for the currently configured hashed mode."""
+        if mode is None:
+            mode = self.hash_mode
         return self.hash_parameters.get(mode, {})
 
     @property

@@ -4,7 +4,7 @@
   "hash_parameters": {
     "sha256": { "salt_length": 16 },
     "bcrypt": { "cost": 12 },
-    "argon2id": { "time": 1, "memory": 65536, "parallelism": 1 }
+    "argon2id": { "time_cost": 1, "memory_cost": 65536, "parallelism": 1 }
   },
 
   "group_seed": "137379782",
