@@ -3,7 +3,7 @@ import os
 import bcrypt
 from argon2 import PasswordHasher, exceptions as argon2_exceptions
 
-from configuration import hash_mode, get_hash_params
+from configuration import hash_mode, get_hash_params, protections
 
 
 def sha256_hash(value, params) -> str:
@@ -70,7 +70,7 @@ HASH_VERIFICATION_FUNCTIONS = {
 }
 
 
-def get_hashing_function(mode=hash_mode):
+def get_hashing_function(mode=hash_mode, enabled_protections=protections):
     """Return the appropriate hashing function already configured."""
     params = get_hash_params(mode)
 
@@ -78,23 +78,31 @@ def get_hashing_function(mode=hash_mode):
     if func is None:
         raise ValueError(f"Invalid hashed mode in config: {mode}")
 
+    pepper = ""
+    if enabled_protections and "pepper" in enabled_protections:
+        pepper = enabled_protections["pepper"]
+
     def wrapper(value):
-        return func(value, params)
+        return func(value + pepper, params)
 
     return wrapper
 
 
-def get_hashing_verification_function(mode=hash_mode):
+def get_hashing_verification_function(mode=hash_mode, enabled_protections=protections):
     """Return the appropriate hashing verification function already configured."""
-    params = get_hash_params(mode)
-
     func = HASH_VERIFICATION_FUNCTIONS.get(mode)
     if func is None:
         raise ValueError(f"Invalid hashed mode in config: {mode}")
 
+    params = get_hash_params(mode)
+    pepper = enabled_protections.get("pepper", "") if enabled_protections else ""
+
     if mode != "argon2id":
-        return func
+        def wrapper(hashed, candidate):
+            return func(hashed, candidate + pepper)
+        return wrapper
 
     def wrapper(hashed, candidate):
-        return func(hashed, candidate, params)
+        return func(hashed, candidate + pepper, params)
+
     return wrapper

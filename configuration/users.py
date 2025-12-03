@@ -22,11 +22,12 @@ import random
 import secrets
 import string
 import pyotp
+import json
+from pathlib import Path
 
-import json  # TODO: REMOVE AFTER TESTING
-from pathlib import Path  # TODO: REMOVE AFTER TESTING
+from .config import config
 
-from configuration import GROUP_SEED, get_password_params, get_totp_user_count
+USERS_FILE_PATH = Path(__file__).parent / "users.json"
 
 
 class DummyMembers:
@@ -34,8 +35,8 @@ class DummyMembers:
     Container object for all generated dummy users.
     """
 
-    def __init__(self, group_seed):
-        self._group_seed = group_seed
+    def __init__(self):
+        self._group_seed = config.group_seed
         self._members = []
         self._weak_members = []
         self._medium_members = []
@@ -43,10 +44,36 @@ class DummyMembers:
         self._totp_users = []
 
         self._generate_members()
+        self.save_members_to_json()
 
-    def _generate_member(self, strength, index):
+    def _username_exists(self, username) -> bool:
+        return any(m["username"].lower() == username.lower() for m in self._members)
+
+    def add_user(self, username, password, enabled_protections=config.protections):
+        if self._username_exists(username):
+            raise ValueError(f"Username '{username}' already exists.")
+
+        strength = self._classify_password(password)
+        new_user = self._generate_member(strength, index=None, username=username)
+
+        self._members.append(new_user)
+
+        if strength == "weak":
+            self._weak_members.append(new_user)
+        elif strength == "medium":
+            self._medium_members.append(new_user)
+        else:
+            self._strong_members.append(new_user)
+
+        if enabled_protections.get("totp_enabled"):
+            new_user["totp_secret"] = pyotp.random_base32()
+            self._totp_users.append(new_user)
+
+        self.save_members_to_json()
+
+    def _generate_member(self, strength, index, username=None) -> dict:
         return {
-            "username": f"{strength}_user_{index}",
+            "username": username if username is not None else f"{strength}_user_{index}",
             "password": self.generate_password(strength),
             "strength": f"{strength}",
             "totp_secret": None
@@ -73,7 +100,7 @@ class DummyMembers:
 
         self._members.extend(self._weak_members + self._medium_members + self._strong_members)
 
-        self._assign_totp_to_some_users(get_totp_user_count())
+        self._assign_totp_to_some_users(config.get_totp_user_count())
 
     def _assign_totp_to_user(self, members):
         temp = random.sample(members, 1)[0]
@@ -98,9 +125,9 @@ class DummyMembers:
             m["totp_secret"] = pyotp.random_base32()
             self._totp_users.append(m)
 
-    def get_random_username(self, strength, is_totp=False) -> str:
+    def get_random_user(self, strength, is_totp=False) -> tuple[str, str]:
         """
-        Returns a username filtered by:
+        Returns a user filtered by:
             - strength  ("weak", "medium", "strong")
             - is_totp  (True/False)
         """
@@ -112,7 +139,29 @@ class DummyMembers:
         if not filtered:
             raise ValueError("No users match the provided filters.")
 
-        return random.choice(filtered)["username"]
+        user = random.choice(filtered)
+
+        # WARNING: In real systems, never return or expose the TOTP secret.
+        # It should be encrypted and stored securely.
+
+        return user["username"], user["totp_secret"]
+
+    def save_members_to_json(self, file_path=USERS_FILE_PATH):
+        data_to_save = [
+            {
+                "username": m["username"],
+                "password": m["password"],
+                "strength": m["strength"],
+                "totp_secret": m["totp_secret"]
+            }
+            for m in self._members
+        ]
+
+        file = Path(file_path)
+        with file.open("w", encoding="utf-8") as f:
+            json.dump(data_to_save, f, indent=4)
+
+        print(f"Saved {len(self._members)} users to {file.resolve()}")
 
     @staticmethod
     def generate_password(strength) -> str:
@@ -130,7 +179,7 @@ class DummyMembers:
             str: Generated password.
         """
 
-        params = get_password_params(strength)
+        params = config.get_password_params(strength)
 
         length = random.randint(params["min_length"], params["max_length"])
         chars = string.ascii_lowercase
@@ -144,33 +193,40 @@ class DummyMembers:
 
         return ''.join(secrets.choice(chars) for _ in range(length))
 
-    def save_members_to_json(self, file_path="users.json"):  # TODO: REMOVE (ONLY FOR TESTING)
-        data_to_save = [
-            {
-                "username": m["username"],
-                "password": m["password"],
-                "strength": m["strength"],
-                "totp_secret": m["totp_secret"]
-            }
-            for m in self._members
-        ]
+    @staticmethod
+    def _classify_password(password) -> str:
+        """
+        Classify a password into 'weak', 'medium', or 'strong'
+        based on the config rules: length + allowed char sets.
 
-        file = Path(file_path)
-        with file.open("w", encoding="utf-8") as f:
-            json.dump(data_to_save, f, indent=4)
+        Returns:
+            strength (str)
+        Raises:
+            ValueError if password fits no category.
+        """
 
-        print(f"Saved {len(self._members)} users to {file.resolve()}")
+        for level in ("weak", "medium", "strong"):
+            params = config.get_password_params(level)
+            min_len = params["min_length"]
+            max_len = params["max_length"]
+
+            if not (min_len <= len(password) <= max_len):
+                continue
+
+            has_upper = any(c.isupper() for c in password)
+            has_digit = any(c.isdigit() for c in password)
+            has_punctuation = any(c in string.punctuation for c in password)
+
+            if params.get("include_upper", False) and not has_upper:
+                continue
+            if params.get("include_digits", False) and not has_digit:
+                continue
+            if params.get("include_punctuation", False) and not has_punctuation:
+                continue
+
+            return level
+
+        raise ValueError(f"Password ({password}) does not meet any configured strength category.")
 
 
-dummy_members = DummyMembers(group_seed=GROUP_SEED)
-
-
-#   TODO: REMOVE (ONLY FOR TESTING)
-
-
-def main():
-    dummy_members.save_members_to_json("users.json")
-
-
-if __name__ == "__main__":
-    main()
+dummy_members = DummyMembers()

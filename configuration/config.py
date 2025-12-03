@@ -85,21 +85,21 @@ class Config:
 
     def _get_environmental_pepper(self) -> str:
         """
-         Load the cryptographic PEPPER from environment variables.
+         Load the cryptographic pepper from environment variables.
 
          Returns:
              str: The pepper value.
 
          Raises:
-             RuntimeError: If PEPPER is missing or empty.
+             RuntimeError: If pepper is missing or empty.
          """
         if self._pepper_cache is not None:
             return self._pepper_cache
 
-        env_pepper = os.getenv("PEPPER", "").strip()
+        env_pepper = os.getenv("pepper", "").strip()
 
         if not env_pepper:
-            raise RuntimeError("PEPPER environment variable not found.")
+            raise RuntimeError("The /'pepper/' environment variable not found.")
 
         self._pepper_cache = env_pepper
         return env_pepper
