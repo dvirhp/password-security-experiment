@@ -6,7 +6,7 @@ DB_PATH = "database.sqlite3"
 
 class Database:
     def __init__(self, database_path=DB_PATH):
-        self._connect = sqlite3.connect(database_path)
+        self._connect = sqlite3.connect(database_path, check_same_thread=False)
         self._connect.row_factory = sqlite3.Row
 
         self._cursor = self._connect.cursor()
