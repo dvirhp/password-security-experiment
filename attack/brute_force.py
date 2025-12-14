@@ -2,6 +2,7 @@ import requests
 
 import time
 
+
 class BruteForceAttack:
     def __init__(self, base_url, username, passwords):
         self.base_url = base_url

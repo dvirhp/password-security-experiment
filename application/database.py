@@ -71,3 +71,13 @@ class Database:
         if row:
             return row["hashed_password"]
         return None
+
+    def close(self):
+        """Close the database cursor and connection."""
+        if self._cursor:
+            self._cursor.close()
+            self._cursor = None
+
+        if self._connect:
+            self._connect.close()
+            self._connect = None

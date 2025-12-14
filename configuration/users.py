@@ -27,15 +27,14 @@ from pathlib import Path
 
 from .config import config
 
-USERS_FILE_PATH = Path(__file__).parent / "users.json"
 
-
-class DummyMembers:
+class DummyMembersManager:
     """
     Container object for all generated dummy users.
     """
 
-    def __init__(self):
+    def __init__(self, directory_path):
+        self._users_file_path = Path(directory_path) / "users.json"
         self._group_seed = config.group_seed
         self._members = []
         self._weak_members = []
@@ -45,6 +44,10 @@ class DummyMembers:
 
         self._generate_members()
         self.save_members_to_json()
+
+    @property
+    def members(self):
+        return self._members
 
     def _username_exists(self, username) -> bool:
         return any(m["username"].lower() == username.lower() for m in self._members)
@@ -125,7 +128,7 @@ class DummyMembers:
             m["totp_secret"] = pyotp.random_base32()
             self._totp_users.append(m)
 
-    def get_random_user(self, strength, is_totp=False) -> tuple[str, str]:
+    def get_random_user(self, strength, is_totp=False) -> tuple[str, str, str]:
         """
         Returns a user filtered by:
             - strength  ("weak", "medium", "strong")
@@ -144,9 +147,9 @@ class DummyMembers:
         # WARNING: In real systems, never return or expose the TOTP secret.
         # It should be encrypted and stored securely.
 
-        return user["username"], user["totp_secret"]
+        return user["username"], user["totp_secret"], user["password"]  # TODO: REVIEW
 
-    def save_members_to_json(self, file_path=USERS_FILE_PATH):
+    def save_members_to_json(self):
         data_to_save = [
             {
                 "username": m["username"],
@@ -157,11 +160,10 @@ class DummyMembers:
             for m in self._members
         ]
 
-        file = Path(file_path)
-        with file.open("w", encoding="utf-8") as f:
+        with self._users_file_path.open("w", encoding="utf-8") as f:
             json.dump(data_to_save, f, indent=4)
 
-        print(f"Saved {len(self._members)} users to {file.resolve()}")
+        print(f"Saved {len(self._members)} users to {self._users_file_path.resolve()}")
 
     @staticmethod
     def generate_password(strength) -> str:
@@ -227,6 +229,3 @@ class DummyMembers:
             return level
 
         raise ValueError(f"Password ({password}) does not meet any configured strength category.")
-
-
-dummy_members = DummyMembers()
