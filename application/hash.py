@@ -70,9 +70,9 @@ HASH_VERIFICATION_FUNCTIONS = {
 }
 
 
-def get_hashing_function(mode=hash_mode, enabled_protections=protections):
+def get_hashing_function(mode=hash_mode, hash_params=None, enabled_protections=protections):
     """Return the appropriate hashing function already configured."""
-    params = get_hash_params(mode)
+    hash_params = get_hash_params(mode) if hash_params is None else hash_params
 
     func = HASH_FUNCTIONS.get(mode)
     if func is None:
@@ -83,18 +83,18 @@ def get_hashing_function(mode=hash_mode, enabled_protections=protections):
         pepper = enabled_protections["pepper"]
 
     def wrapper(value):
-        return func(value + pepper, params)
+        return func(value + pepper, hash_params)
 
     return wrapper
 
 
-def get_hashing_verification_function(mode=hash_mode, enabled_protections=protections):
+def get_hashing_verification_function(mode=hash_mode, hash_params=None, enabled_protections=protections):
     """Return the appropriate hashing verification function already configured."""
     func = HASH_VERIFICATION_FUNCTIONS.get(mode)
     if func is None:
         raise ValueError(f"Invalid hashed mode in config: {mode}")
 
-    params = get_hash_params(mode)
+    hash_params = get_hash_params(mode) if hash_params is None else hash_params
     pepper = enabled_protections.get("pepper", "") if enabled_protections else ""
 
     if mode != "argon2id":
@@ -103,6 +103,6 @@ def get_hashing_verification_function(mode=hash_mode, enabled_protections=protec
         return wrapper
 
     def wrapper(hashed, candidate):
-        return func(hashed, candidate + pepper, params)
+        return func(hashed, candidate + pepper, hash_params)
 
     return wrapper

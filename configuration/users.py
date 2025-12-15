@@ -163,7 +163,7 @@ class DummyMembersManager:
         with self._users_file_path.open("w", encoding="utf-8") as f:
             json.dump(data_to_save, f, indent=4)
 
-        print(f"Saved {len(self._members)} users to {self._users_file_path.resolve()}")
+        # print(f"Saved {len(self._members)} users to {self._users_file_path.resolve()}")   # TODO: REMOVE
 
     @staticmethod
     def generate_password(strength) -> str:

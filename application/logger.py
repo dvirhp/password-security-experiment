@@ -9,7 +9,7 @@ class Logger:
     in JSON-lines format, as required by the project.
     """
 
-    def __init__(self, directory_path, group_seed, selected_hash_mode=None, enabled_protections=None):
+    def __init__(self, directory_path, group_seed, selected_hash_mode, hash_param, protections):
         self._log_directory = Path(directory_path)
 
         self._attempt_log = self._log_directory / "attempts.log"
@@ -17,7 +17,25 @@ class Logger:
 
         self._group_seed = group_seed
         self._hash_mode = selected_hash_mode
-        self._protections = enabled_protections,
+        self._hash_params = hash_param
+        self._protections = self._filter_enabled_protections(protections)
+
+    @staticmethod
+    def _filter_enabled_protections(protections):
+        """
+        Returns only enabled protections.
+        If none are enabled, returns None.
+        """
+        if not protections:
+            return None
+
+        enabled = {
+            key: True
+            for key, value in protections.items()
+            if value
+        }
+
+        return enabled or None
 
     def _log(self, path, username, result, action, status, message, latency_ms):
         """Write a single JSONL entry to a log file."""
@@ -26,6 +44,7 @@ class Logger:
             "group_seed": self._group_seed,
             "username": username,
             "hash_mode": self._hash_mode,
+            "hash_parameters": self._hash_params,
             "protection_flags": self._protections,
             "result": result,
             "status": status,

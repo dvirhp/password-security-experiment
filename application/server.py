@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 from pathlib import Path
 import time
 
-from configuration import hash_mode, protections, DummyMembersManager, GROUP_SEED
+from configuration import hash_mode, get_hash_params, protections, DummyMembersManager, GROUP_SEED
 
 from .hash import get_hashing_function, get_hashing_verification_function
 from .logger import Logger
@@ -16,22 +16,23 @@ HTTP_NOT_FOUND = 404
 
 
 class AuthServer:
-    def __init__(self, directory_path, selected_hash_mode=None, enabled_protections=None):
+    def __init__(self, directory_path, selected_hash_mode=None, hash_params=None, enabled_protections=None):
         self._directory_path = Path(directory_path)
 
         self._database = Database(self._directory_path / "database.db")
         self._dummy_members_manager = DummyMembersManager(self._directory_path)
 
         self._hash_mode = selected_hash_mode or hash_mode
+        self._hash_params = hash_params or get_hash_params(self._hash_mode)
         self._protections = enabled_protections or protections
 
-        self._hash_function = get_hashing_function(self._hash_mode, self._protections)
-        self._verify_function = get_hashing_verification_function(self._hash_mode, self._protections)
+        self._hash_function = get_hashing_function(self._hash_mode, self._hash_params, self._protections)
+        self._verify_function = get_hashing_verification_function(self._hash_mode, self._hash_params, self._protections)
 
         self._app = Flask(__name__)
         self._register_routes()
 
-        self._logger = Logger(self._directory_path, GROUP_SEED, self._hash_mode, self._protections)
+        self._logger = Logger(self._directory_path, GROUP_SEED, self._hash_mode, self._hash_params, self._protections)
 
         self._register_dummy_members()  # Register Dummy members
 
