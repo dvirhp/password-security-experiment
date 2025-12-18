@@ -1,52 +1,41 @@
-# from attack.brute_force import BruteForceAttack
-#
-#
-# def test_bruteforce_attack_runs():
-#     attack = BruteForceAttack(
-#         base_url="http://127.0.0.1:5000",
-#         username="non_existing_user",
-#         passwords=["a", "b", "c"]
-#     )
-#
-#     # If no exception is raised → test passed
-#     attack.run()
-
-
 import os
+import time
 import unittest
 from pathlib import Path
 import tempfile
-import random
-
 from application import AuthServer
-from configuration import hash_mode, protections, generate_password
+from configuration import hash_mode, get_hash_params, protections, generate_password
 
 DIRECTORY_PATH = Path(__file__).parent
 
-STRENGTHS = ["weak", "medium", "strong"]
-
-
-# Set environment variable in Python code
 os.environ["pepper"] = "137379782"
 
 _protections = {
-    "pepper_enabled": False,
-    "rate_limit_enabled": False,
-    "lockout_enabled": False,
+    "pepper_enabled": True,
+    "rate_limit_enabled": True,
+    "lockout_enabled": True,
     "captcha_enabled": False,
     "totp_enabled": False
 }
 
 
-class AuthServerTestCase(unittest.TestCase):
+class BruteForceTestCase(unittest.TestCase):
     def setUp(self):
-        self.temp_dir = tempfile.TemporaryDirectory()
-        self.auth = AuthServer(self.temp_dir.name, hash_mode, _protections)
-        self.client = self.auth._app.test_client()
+        # self.temp_dir = tempfile.TemporaryDirectory()
+        # self.auth = AuthServer(self.temp_dir.name, hash_mode, protections)
+
+        # Uncomment the following line if you want to use a persistent directory instead
+        self.auth = AuthServer(DIRECTORY_PATH, hash_mode, get_hash_params(hash_mode), _protections)
+        # self.auth = AuthServer(DIRECTORY_PATH, "argon2id", get_hash_params("argon2id"), _protections)
+
+        self.client = self.auth._app.test_client()  # Flask test client
 
     def tearDown(self):
-        self.auth._database.close()
-        self.temp_dir.cleanup()
+        self.auth.close_database()
+
+        # Comment this line if you are using a persistent (non-temporary) directory
+        # self.temp_dir.cleanup()
+
         print("Closing database...")
 
     def test_bruteforce_login_random(self):
@@ -56,20 +45,27 @@ class AuthServerTestCase(unittest.TestCase):
         """
 
         username, _, user_password = self.auth.dummy_members_manager.get_random_user("weak")
+        ip_address = "192.666.1.10"
 
-        max_attempts = 50_000
+        # max_attempts = 50_000
+        max_attempts = 2000
         success = False
 
         print(username, " ", user_password, " ")
 
         for attempt in range(1, max_attempts + 1):
 
+            if attempt == 1050:
+                ip_address = "192.666.6.10"
+                print("[INFO] Sleeping for 5 seconds after 1050 attempts")
+                time.sleep(5)
+
             password = generate_password("weak")
 
             response = self.client.post(
                 "/login",
                 json={"username": username, "password": password},
-                environ_base={"REMOTE_ADDR": "192.666.1.10"}
+                environ_base={"REMOTE_ADDR": ip_address}
             )
 
             if response.status_code == 200:

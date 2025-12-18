@@ -27,20 +27,36 @@ class AuthServerTestCase(unittest.TestCase):
 
     def test_register_and_login(self):
         # Register user
-        response = self.client.post("/register", json={"username": "alice", "password": "my32rd"})
+        response = self.client.post(
+            "/register",
+            json={"username": "alice", "password": "my32rd"},
+            environ_base={"REMOTE_ADDR": "192.168.1.10"}
+        )
         self.assertEqual(response.status_code, 201)
 
         # Login user
-        response = self.client.post("/login", json={"username": "alice", "password": "my32rd"})
+        response = self.client.post(
+            "/login",
+            json={"username": "alice", "password": "my32rd"},
+            environ_base={"REMOTE_ADDR": "192.168.1.10"}
+        )
         self.assertEqual(response.status_code, 200)
         self.assertIn("login success", response.get_json().get("message"))
 
         # Wrong password
-        response = self.client.post("/login", json={"username": "alice", "password": "wrong"})
+        response = self.client.post(
+            "/login",
+            json={"username": "alice", "password": "wrong"},
+            environ_base={"REMOTE_ADDR": "192.168.1.10"}
+        )
         self.assertEqual(response.status_code, 401)
 
         # Non-existent user
-        response = self.client.post("/login", json={"username": "bob", "password": "123"})
+        response = self.client.post(
+            "/login",
+            json={"username": "bob", "password": "123"},
+            environ_base={"REMOTE_ADDR": "192.168.1.10"}
+        )
         self.assertEqual(response.status_code, 404)
 
 

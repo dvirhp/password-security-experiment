@@ -1,5 +1,6 @@
 import os
 import secrets
+import string
 import time
 import unittest
 from pathlib import Path
@@ -30,6 +31,13 @@ _protections = {
 }
 
 
+# def generate_weak_password(length):
+#     chars = string.ascii_lowercase
+#     chars += string.digits
+#
+#     return ''.join(secrets.choice(chars) for _ in range(length))
+
+
 def generate_password(min_length, max_length, chars) -> str:
     length = random.randint(min_length, max_length)
 
@@ -56,7 +64,12 @@ class BruteForceTestCase(unittest.TestCase):
         # print(self._bruteforce(100, 50000, 4, 6, "0123456789abcd"))
         # print(self._bruteforce(100, 50000, 4, 6, "0123456789abcde"))
         # print(self._bruteforce(100, 50000, 4, 6, "0123456789abcdef"))
-        print(self._bruteforce(100, 50000, 6, 8, "0123456789abcdefg"))
+        # print(self._bruteforce(100, 50000, 6, 8, "0123456789abcdefg"))
+
+        # chars = "0123456789!@#$%"
+        # print(chars)
+
+        # print(self._bruteforce(10, 50000, 5, 6, chars))
 
         self.assertTrue(True)
 

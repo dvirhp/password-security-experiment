@@ -184,6 +184,11 @@ class DummyMembersManager:
         params = config.get_password_params(strength)
 
         length = random.randint(params["min_length"], params["max_length"])
+        chars = params.get("charset", [])
+
+        if chars:
+            return ''.join(secrets.choice(chars) for _ in range(length))
+
         chars = string.ascii_lowercase
 
         if params.get("include_upper", True):

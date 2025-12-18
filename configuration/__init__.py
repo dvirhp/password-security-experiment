@@ -10,6 +10,8 @@ get_hash_params = config.get_hash_params
 
 protections = config.protections
 get_protection_with_params = config.get_protection_with_params
+rate_limit_parameters = config.rate_limit_parameters
+lockout_parameters = config.lockout_parameters
 
 get_password_params = config.get_password_params
 

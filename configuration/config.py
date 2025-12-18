@@ -54,6 +54,16 @@ class Config:
         """Parameters for each protection."""
         return self._data["protections_parameters"]
 
+    @property
+    def rate_limit_parameters(self) -> dict:
+        """Return the rate-limit parameters."""
+        return self.protections_parameters["rate_limit_parameters"]
+
+    @property
+    def lockout_parameters(self) -> dict:
+        """Return the lockout parameters."""
+        return self.protections_parameters["lockout_parameters"]
+
     def get_protection_with_params(self) -> dict:
         """
         Return { protection_name: parameters } ONLY for enabled protections.
@@ -112,7 +122,7 @@ class Config:
             strength (str): "weak", "medium", or "strong"
 
         Returns:
-            dict: Parameters, e.g.
+            dict: Parameters.
 
         Raises:
             ValueError: If strength is invalid or not found in config.

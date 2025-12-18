@@ -37,11 +37,12 @@ class Logger:
 
         return enabled or None
 
-    def _log(self, path, username, result, action, status, message, latency_ms):
+    def _log(self, path, ip_address, username, result, action, status, message, latency_ms):
         """Write a single JSONL entry to a log file."""
         entry = {
             "timestamp": datetime.utcnow().isoformat() + "Z",
             "group_seed": self._group_seed,
+            "IP address": ip_address,
             "username": username,
             "hash_mode": self._hash_mode,
             "hash_parameters": self._hash_params,
@@ -56,8 +57,10 @@ class Logger:
         with path.open("a", encoding="utf-8") as f:
             f.write(json.dumps(entry) + "\n")
 
-    def log_register(self, username, result, status, message, start_time, end_time):
-        self._log(self._register_log, username, result, "register", status, message, (end_time - start_time) * 1000)
+    def log_register(self, ip_address, username, result, status, message, start_time, end_time):
+        latency_ms = (end_time - start_time) * 1000
+        self._log(self._register_log, ip_address, username, result, "register", status, message, latency_ms)
 
-    def log_login(self, username, result, status, message, start_time, end_time):
-        self._log(self._attempt_log, username, result, "login", status, message, (end_time - start_time) * 1000)
+    def log_login(self, ip_address, username, result, status, message, start_time, end_time):
+        latency_ms = (end_time - start_time) * 1000
+        self._log(self._attempt_log, ip_address, username, result, "login", status, message, latency_ms)

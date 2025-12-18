@@ -19,13 +19,13 @@
 
   "protections_parameters": {
     "rate_limit_parameters": { "tokens": 999, "refill_rate_tps": 1 },
-    "lockout_parameters": { "tokens": 999, "duration_mm": 15 },
+    "lockout_parameters": { "tokens": 99, "token_rate": 10, "duration_rate": 1, "duration_mm": 0.1 },
     "captcha_parameters": { "tokens": 15 },
     "totp_parameters": { "number_of_users": 5, "length": 5, "period_ss": 30 }
   },
 
   "password_parameters": {
-    "weak": { "min_length": 4, "max_length": 6, "include_upper": false, "include_digits": true },
+    "weak": { "min_length": 4, "max_length": 6, "charset": "0123456789abcde" },
     "medium": { "min_length": 8, "max_length": 12, "include_upper": true, "include_digits": true },
     "strong": { "min_length": 14, "max_length": 20, "include_upper": true, "include_digits": true, "include_punctuation": true }
   }
