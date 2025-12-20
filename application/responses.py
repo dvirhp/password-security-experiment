@@ -129,3 +129,40 @@ class ResponseHandler:
             start_time,
             time.perf_counter()
         )
+
+    def login_captcha_required(self, ip_address, username, start_time):
+        return self._login_response(
+            ip_address,
+            username,
+            "fail",
+            HTTP_BAD_REQUEST,
+            "error",
+            "captcha required",
+            start_time,
+            time.perf_counter()
+        )
+    
+    def login_totp_required(self, ip_address, username, start_time):
+        return self._login_response(
+            ip_address,
+            username,
+            "blocked",
+            HTTP_UNAUTHORIZED,
+            "error",
+            "totp required",
+            start_time,
+            time.perf_counter()
+        )
+
+    def login_totp_invalid(self, ip_address, username, start_time):
+        return self._login_response(
+            ip_address,
+            username,
+            "fail",
+            HTTP_UNAUTHORIZED,
+            "error",
+            "invalid totp",
+            start_time,
+            time.perf_counter()
+        )
+

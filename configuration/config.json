@@ -14,7 +14,7 @@
     "rate_limit_enabled": false,
     "lockout_enabled": false,
     "captcha_enabled": false,
-    "totp_enabled": false
+    "totp_enabled": true
   },
 
   "protections_parameters": {

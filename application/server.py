@@ -4,6 +4,8 @@ import time
 
 from configuration import hash_mode, get_hash_params, protections, DummyMembersManager, GROUP_SEED
 from protection import RateLimiter, Lockout
+from protection.captcha import Captcha
+from protection.totp import TOTP
 
 from .hash import get_hashing_function, get_hashing_verification_function
 from .logger import Logger
@@ -24,6 +26,8 @@ class AuthServer:
 
         self._rate_limiter = RateLimiter() if self._protections.get("rate_limit_enabled", False) else None
         self._lockout = Lockout() if self._protections.get("lockout_enabled", False) else None
+        self._captcha = Captcha() if self._protections.get("captcha_enabled", False) else None
+        self._totp = TOTP() if self._protections.get("totp_enabled", False) else None
 
         self._hash_function = get_hashing_function(self._hash_mode, self._hash_params, self._protections)
         self._verify_function = get_hashing_verification_function(self._hash_mode, self._hash_params, self._protections)
@@ -82,7 +86,17 @@ class AuthServer:
 
         if not username or not password:
             return self._response_handler.login_invalid_input(ip_address, username, start_time)
+        
+        captcha_token = data.get("captcha_token")
 
+        if self._captcha:
+            self._captcha.apply_delay()
+
+            if not captcha_token or not self._captcha.verify_token(captcha_token):
+                return self._response_handler.login_captcha_required(
+                    ip_address, username, start_time
+                )
+        
         stored_hashed_password = self._database.retrieve_user_hash(username)
 
         if not stored_hashed_password:
@@ -91,10 +105,21 @@ class AuthServer:
         if self._lockout:
             return self._check_lockout(ip_address, username, start_time, stored_hashed_password, password)
 
-        if self._verify_function(stored_hashed_password, password):
-            return self._response_handler.login_success(ip_address, username, start_time)
+        password_ok = self._verify_function(stored_hashed_password, password)
 
-        return self._response_handler.login_fail(ip_address, username, start_time)
+        if password_ok:
+            if self._protections.get("totp_enabled", False):
+                return self._response_handler.login_totp_required(
+                    ip_address, username, start_time
+                )
+
+            return self._response_handler.login_success(
+                ip_address, username, start_time
+            )
+
+        return self._response_handler.login_fail(
+            ip_address, username, start_time
+        )
 
     def _check_lockout(self, ip_address, username, start_time, stored_hashed_password, password):
         allowed, message = self._lockout.allow_attempt(username)
@@ -106,8 +131,31 @@ class AuthServer:
         return self._response_handler.login_fail(ip_address, username, start_time)
 
     def _login_totp(self):
-        print(self._hash_mode)
-        return jsonify({"TODO": "to be implemented"})
+        start_time = time.perf_counter()
+
+        data = request.get_json(force=True)
+        username = data.get("username")
+        totp_code = data.get("totp")
+        ip_address = request.remote_addr
+
+        if not username or not totp_code:
+            return self._response_handler.login_invalid_input(
+                ip_address, username, start_time
+            )
+
+        if not self._protections.get("totp_enabled", False):
+            return self._response_handler.login_fail(
+                ip_address, username, start_time
+            )
+
+        if totp_code != "123456":
+            return self._response_handler.login_totp_invalid(
+                ip_address, username, start_time
+            )
+
+        return self._response_handler.login_success(
+            ip_address, username, start_time
+        )
 
     def close_database(self):
         self._database.close()
