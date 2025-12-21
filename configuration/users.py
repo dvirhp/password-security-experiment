@@ -52,7 +52,7 @@ class DummyMembersManager:
     def _username_exists(self, username) -> bool:
         return any(m["username"].lower() == username.lower() for m in self._members)
 
-    def add_user(self, username, password, enabled_protections=config.protections):
+    def add_user(self, username, password, totp_enabled=False):
         if self._username_exists(username):
             raise ValueError(f"Username '{username}' already exists.")
 
@@ -68,7 +68,7 @@ class DummyMembersManager:
         else:
             self._strong_members.append(new_user)
 
-        if enabled_protections.get("totp_enabled"):
+        if totp_enabled:
             new_user["totp_secret"] = pyotp.random_base32()
             self._totp_users.append(new_user)
 
@@ -163,7 +163,11 @@ class DummyMembersManager:
         with self._users_file_path.open("w", encoding="utf-8") as f:
             json.dump(data_to_save, f, indent=4)
 
-        # print(f"Saved {len(self._members)} users to {self._users_file_path.resolve()}")   # TODO: REMOVE
+    def get_totp_secret(self, username):
+        for member in self._members:
+            if member["username"].lower() == username.lower():
+                return member.get("totp_secret")
+        return None
 
     @staticmethod
     def generate_password(strength) -> str:

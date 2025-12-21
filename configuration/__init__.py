@@ -7,11 +7,13 @@ GROUP_SEED = config.group_seed
 
 hash_mode = config.hash_mode
 get_hash_params = config.get_hash_params
+get_environmental_pepper = config.get_environmental_pepper
 
-protections = config.protections
-get_protection_with_params = config.get_protection_with_params
+protections = config.get_protection_with_params()
 rate_limit_parameters = config.rate_limit_parameters
 lockout_parameters = config.lockout_parameters
+captcha_parameters = config.captcha_parameters
+totp_parameters = config.totp_parameters
 
 get_password_params = config.get_password_params
 

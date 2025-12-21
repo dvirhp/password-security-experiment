@@ -39,7 +39,7 @@ class Config:
         return self._data["hash_parameters"]
 
     def get_hash_params(self, mode=None) -> dict:
-        """Return params for the currently configured hashed mode."""
+        """Return lockout_parameters for the currently configured hashed mode."""
         if mode is None:
             mode = self.hash_mode
         return self.hash_parameters.get(mode, {})
@@ -64,6 +64,16 @@ class Config:
         """Return the lockout parameters."""
         return self.protections_parameters["lockout_parameters"]
 
+    @property
+    def captcha_parameters(self) -> dict:
+        """Return the captcha parameters."""
+        return self.protections_parameters["captcha_parameters"]
+
+    @property
+    def totp_parameters(self) -> dict:
+        """Return the totp parameters."""
+        return self.protections_parameters["totp_parameters"]
+
     def get_protection_with_params(self) -> dict:
         """
         Return { protection_name: parameters } ONLY for enabled protections.
@@ -76,7 +86,7 @@ class Config:
             key = name.replace("_enabled", "")
 
             if key == "pepper":
-                result[key] = self._get_environmental_pepper()
+                result[key] = self.get_environmental_pepper()
             else:
                 result[key] = self.protections_parameters.get(key + "_parameters", {})
 
@@ -93,23 +103,17 @@ class Config:
                          .get("totp_parameters", {}) \
                          .get("number_of_users", 0)
 
-    def _get_environmental_pepper(self) -> str:
+    def get_environmental_pepper(self) -> str:
         """
          Load the cryptographic pepper from environment variables.
 
          Returns:
              str: The pepper value.
-
-         Raises:
-             RuntimeError: If pepper is missing or empty.
          """
         if self._pepper_cache is not None:
             return self._pepper_cache
 
         env_pepper = os.getenv("pepper", "").strip()
-
-        if not env_pepper:
-            raise RuntimeError("The /'pepper/' environment variable not found.")
 
         self._pepper_cache = env_pepper
         return env_pepper

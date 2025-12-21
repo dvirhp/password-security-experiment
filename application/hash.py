@@ -3,7 +3,7 @@ import os
 import bcrypt
 from argon2 import PasswordHasher, exceptions as argon2_exceptions
 
-from configuration import hash_mode, get_hash_params, protections
+from configuration import hash_mode, get_hash_params, get_environmental_pepper
 
 
 def sha256_hash(value, params) -> str:
@@ -70,7 +70,7 @@ HASH_VERIFICATION_FUNCTIONS = {
 }
 
 
-def get_hashing_function(mode=hash_mode, hash_params=None, enabled_protections=protections):
+def get_hashing_function(mode=hash_mode, hash_params=None, pepper=None):
     """Return the appropriate hashing function already configured."""
     hash_params = get_hash_params(mode) if hash_params is None else hash_params
 
@@ -78,9 +78,8 @@ def get_hashing_function(mode=hash_mode, hash_params=None, enabled_protections=p
     if func is None:
         raise ValueError(f"Invalid hashed mode in config: {mode}")
 
-    pepper = ""
-    if enabled_protections and "pepper" in enabled_protections:
-        pepper = enabled_protections["pepper"]
+    # pepper = enabled_protections.get("pepper", "") if enabled_protections else ""
+    pepper = pepper or get_environmental_pepper() or ""
 
     def wrapper(value):
         return func(value + pepper, hash_params)
@@ -88,14 +87,15 @@ def get_hashing_function(mode=hash_mode, hash_params=None, enabled_protections=p
     return wrapper
 
 
-def get_hashing_verification_function(mode=hash_mode, hash_params=None, enabled_protections=protections):
+def get_hashing_verification_function(mode=hash_mode, hash_params=None, pepper=None):
     """Return the appropriate hashing verification function already configured."""
     func = HASH_VERIFICATION_FUNCTIONS.get(mode)
     if func is None:
         raise ValueError(f"Invalid hashed mode in config: {mode}")
 
     hash_params = get_hash_params(mode) if hash_params is None else hash_params
-    pepper = enabled_protections.get("pepper", "") if enabled_protections else ""
+    # pepper = enabled_protections.get("pepper", "") if enabled_protections else ""
+    pepper = pepper or get_environmental_pepper() or ""
 
     if mode != "argon2id":
         def wrapper(hashed, candidate):

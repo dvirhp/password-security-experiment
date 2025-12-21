@@ -10,6 +10,14 @@ DIRECTORY_PATH = Path(__file__).parent
 
 os.environ["pepper"] = "137379782"
 
+_protections_1 = {
+    "pepper": "137379782",
+    "rate_limit": {"tokens": 4, "refill_rate_tps": 0},
+    "lockout": {"tokens": 9, "token_rate": 10, "duration_rate": 1, "duration_mm": 0.1},
+    "captcha": {"tokens": 15},
+    "totp": {"number_of_users": 5, "length": 5, "period_ss": 30}
+}
+
 _protections = {
     "pepper_enabled": True,
     "rate_limit_enabled": True,
@@ -25,7 +33,7 @@ class BruteForceTestCase(unittest.TestCase):
         # self.auth = AuthServer(self.temp_dir.name, hash_mode, protections)
 
         # Uncomment the following line if you want to use a persistent directory instead
-        self.auth = AuthServer(DIRECTORY_PATH, hash_mode, get_hash_params(hash_mode), _protections)
+        self.auth = AuthServer(DIRECTORY_PATH, hash_mode, get_hash_params(hash_mode), _protections_1)
         # self.auth = AuthServer(DIRECTORY_PATH, "argon2id", get_hash_params("argon2id"), _protections)
 
         self.client = self.auth._app.test_client()  # Flask test client
@@ -82,4 +90,5 @@ class BruteForceTestCase(unittest.TestCase):
 
 
 if __name__ == "__main__":
+    os.environ["pepper"] = "137379782"
     unittest.main()

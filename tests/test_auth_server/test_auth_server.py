@@ -1,3 +1,4 @@
+import os
 import unittest
 from pathlib import Path
 import tempfile
@@ -6,11 +7,21 @@ from configuration import hash_mode, get_hash_params, protections
 
 DIRECTORY_PATH = Path(__file__).parent
 
+_protections_1 = {
+    "pepper": "137379782",
+    "rate_limit": {"tokens": 4, "refill_rate_tps": 0},
+    "lockout": {"tokens": 9, "token_rate": 10, "duration_rate": 1, "duration_mm": 0.1},
+    "captcha": {"tokens": 15},
+    "totp": {"number_of_users": 5, "length": 5, "period_ss": 30}
+}
+
+os.environ["pepper"] = "137379782"
+
 
 class AuthServerTestCase(unittest.TestCase):
     def setUp(self):
         # self.temp_dir = tempfile.TemporaryDirectory()
-        # self.auth = AuthServer(self.temp_dir.name, hash_mode, protections)
+        # self.auth = AuthServer(self.temp_dir.name, hash_mode, get_hash_params(hash_mode), protections)
 
         # Uncomment the following line if you want to use a persistent directory instead
         self.auth = AuthServer(DIRECTORY_PATH, "argon2id", get_hash_params("argon2id"), protections)

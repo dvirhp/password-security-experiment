@@ -18,24 +18,7 @@ class Logger:
         self._group_seed = group_seed
         self._hash_mode = selected_hash_mode
         self._hash_params = hash_param
-        self._protections = self._filter_enabled_protections(protections)
-
-    @staticmethod
-    def _filter_enabled_protections(protections):
-        """
-        Returns only enabled protections.
-        If none are enabled, returns None.
-        """
-        if not protections:
-            return None
-
-        enabled = {
-            key: True
-            for key, value in protections.items()
-            if value
-        }
-
-        return enabled or None
+        self._protections = protections
 
     def _log(self, path, ip_address, username, result, action, status, message, latency_ms):
         """Write a single JSONL entry to a log file."""

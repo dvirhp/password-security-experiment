@@ -10,7 +10,7 @@
   "group_seed": "137379782",
 
   "protections": {
-    "pepper_enabled": false,
+    "pepper_enabled": true,
     "rate_limit_enabled": false,
     "lockout_enabled": false,
     "captcha_enabled": false,
@@ -18,10 +18,10 @@
   },
 
   "protections_parameters": {
-    "rate_limit_parameters": { "tokens": 999, "refill_rate_tps": 1 },
-    "lockout_parameters": { "tokens": 99, "token_rate": 10, "duration_rate": 1, "duration_mm": 0.1 },
-    "captcha_parameters": { "tokens": 15 },
-    "totp_parameters": { "number_of_users": 5, "length": 5, "period_ss": 30 }
+    "rate_limit_parameters": { "tokens": 4, "refill_rate_tps": 0 },
+    "lockout_parameters": { "tokens": 9, "token_rate": 10, "duration_rate": 1, "duration_mm": 0.1 },
+    "captcha_parameters": { "tokens": 3, "time_to_live_ss": 5 },
+    "totp_parameters": { "number_of_users": 5, "tokens": 3, "time_step_ss": 5, "tolerance_ss": 1 }
   },
 
   "password_parameters": {

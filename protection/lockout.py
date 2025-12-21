@@ -3,6 +3,13 @@ from collections import defaultdict
 from configuration import lockout_parameters
 
 
+RESULTS = {
+    "PERMANENTLY_BLOCKED": (False, "account blocked, contact admin"),
+    "TEMPORARILY_LOCKED": (False, "account temporarily locked"),
+    "ALLOWED": (True, None)
+}
+
+
 class Lockout:
     """
     User lockout handler based on token bucket + exponential lockout duration.
@@ -13,27 +20,25 @@ class Lockout:
     When tokens reach 0 → permanent block.
     """
 
-    def __init__(self, params=None):
-        self._params = params or lockout_parameters
+    def __init__(self, parameters=None):
+        self._lockout_parameters = parameters or lockout_parameters
 
-        self._initial_tokens = self._params["tokens"]
-        self._token_rate = self._params["token_rate"]
-        self._base_duration_sec = self._params["duration_mm"] * 60
-        self._duration_rate = self._params["duration_rate"]
+        self._initial_tokens = self._lockout_parameters["tokens"]
+        self._token_rate = self._lockout_parameters["token_rate"]
+        self._base_duration_sec = self._lockout_parameters["duration_mm"] * 60
+        self._duration_rate = self._lockout_parameters["duration_rate"]
 
         self._users = defaultdict(self._new_user_state)
 
     def _new_user_state(self) -> dict:
         return {
             "tokens": self._initial_tokens,
+            "next_allocation": max(0, self._initial_tokens // self._token_rate),
             "locked_until": None,
             "last_lockout_duration": self._base_duration_sec
         }
 
-    def _reset_tokens_after_lockout(self, user):
-        user["tokens"] = max(0, user["tokens"] // self._token_rate)
-
-    def allow_attempt(self, username):  # TODO: FIX LOGIC, SO IT WONT LOCKOUT FOREVER AT FIRST LOCKOUT
+    def allow_attempt(self, username):
         """
         Returns (allowed, message)
 
@@ -42,30 +47,31 @@ class Lockout:
         """
 
         user = self._users[username]
-        now = time.time()
+        now = time.perf_counter()
 
-        if user["tokens"] <= 0:
-            return False, "account blocked, contact admin"
+        if user["tokens"] > 0:
+            user["tokens"] -= 1
+            return RESULTS["ALLOWED"]
 
-        if user["locked_until"] and now < user["locked_until"]:
-            return False, "account temporarily locked"
+        if user["next_allocation"] <= 0:
+            return RESULTS["PERMANENTLY_BLOCKED"]
 
-        if user["locked_until"] and now >= user["locked_until"]:
+        if user["locked_until"] is None:
+            user["locked_until"] = now + user["last_lockout_duration"]
+            return RESULTS["TEMPORARILY_LOCKED"]
+
+        if now < user["locked_until"]:
+            return RESULTS["TEMPORARILY_LOCKED"]
+
+        if now >= user["locked_until"]:
+            user["tokens"] = user["next_allocation"] - 1
+            user["next_allocation"] = max(0, user["next_allocation"] // self._token_rate)
             user["locked_until"] = None
-            self._reset_tokens_after_lockout(user)
-
-            if user["tokens"] <= 0:
-                return False, "account blocked, contact admin"
-
             user["last_lockout_duration"] *= self._duration_rate
 
-        user["tokens"] -= 1
+            return RESULTS["ALLOWED"]
 
-        if user["tokens"] < 0:
-            user["locked_until"] = now + user["last_lockout_duration"]
-            return False, "account temporarily locked"
-
-        return True, None
+        return RESULTS["PERMANENTLY_BLOCKED"]
 
     def reset_after_successful_login(self, username):
         """
@@ -75,5 +81,6 @@ class Lockout:
         if username in self._users:
             user = self._users[username]
             user["tokens"] = self._initial_tokens
+            user["next_allocation"] = max(0, self._initial_tokens // self._token_rate)
             user["locked_until"] = None
             user["last_lockout_duration"] = self._base_duration_sec

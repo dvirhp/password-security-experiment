@@ -5,8 +5,8 @@ from configuration import rate_limit_parameters
 
 
 class RateLimiter:
-    def __init__(self, rate_limit_params=None):
-        self._rate_limit_parameters = rate_limit_params or rate_limit_parameters
+    def __init__(self, parameters=None):
+        self._rate_limit_parameters = parameters or rate_limit_parameters
 
         self._max_tokens = self._rate_limit_parameters["tokens"]
         self._refill_rate_tps = self._rate_limit_parameters["refill_rate_tps"]
