@@ -10,6 +10,7 @@ HTTP_BAD_REQUEST = 400
 HTTP_UNAUTHORIZED = 401
 HTTP_FORBIDDEN = 403
 HTTP_NOT_FOUND = 404
+HTTP_CONFLICT = 409
 HTTP_LOCKOUT = 423
 HTTP_TOO_MANY_REQUESTS = 429
 
@@ -37,6 +38,18 @@ class ResponseHandler:
             time.perf_counter()
         )
 
+    def register_username_conflict(self, ip_address, username, start_time):
+        return self._register_response(
+            ip_address,
+            username,
+            "fail",
+            HTTP_CONFLICT,
+            "error",
+            "username already exists",
+            start_time,
+            time.perf_counter()
+        )
+
     def register_invalid_input(self, ip_address, username, start_time):
         return self._register_response(
             ip_address,
@@ -44,7 +57,7 @@ class ResponseHandler:
             "fail",
             HTTP_BAD_REQUEST,
             "error",
-            "username and password are required",
+            "username or password are missing",
             start_time,
             time.perf_counter()
         )
@@ -68,7 +81,7 @@ class ResponseHandler:
             "fail",
             HTTP_BAD_REQUEST,
             "error",
-            "username and password are required",
+            "username or password are missing",
             start_time,
             time.perf_counter()
         )
@@ -140,7 +153,7 @@ class ResponseHandler:
             "fail",
             HTTP_FORBIDDEN,
             "error",
-            "captcha_required",
+            "captcha required",
             start_time,
             time.perf_counter()
         )
@@ -157,9 +170,36 @@ class ResponseHandler:
             time.perf_counter()
         )
 
+    def login_totp_required(self, ip_address, username, start_time):
+        return self._login_response(
+            ip_address,
+            username,
+            "fail",
+            HTTP_FORBIDDEN,
+            "error",
+            "totp required",
+            start_time,
+            time.perf_counter()
+        )
+
+    def login_totp_blocked(self, ip_address, username, start_time):
+        return self.login_captcha_blocked(ip_address, username, start_time)
+
+    def login_totp_fail(self, ip_address, username, start_time):
+        return self._login_response(
+            ip_address,
+            username,
+            "fail",
+            HTTP_UNAUTHORIZED,
+            "error",
+            "incorrect totp",
+            start_time,
+            time.perf_counter()
+        )
+
     @staticmethod
     def get_token_captcha(token):
-        return jsonify({"captcha_token": token}), HTTP_NO_CONTENT
+        return jsonify({"captcha_token": token}), HTTP_OK
 
     @staticmethod
     def valid_captcha():
@@ -167,4 +207,4 @@ class ResponseHandler:
 
     @staticmethod
     def invalid_captcha():
-        return jsonify({"error": "account blocked, contact admin"}), HTTP_LOCKOUT
+        return jsonify({"error": "invalid captcha"}), HTTP_BAD_REQUEST

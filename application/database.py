@@ -28,7 +28,7 @@ class Database:
 
         self._connect.commit()
 
-    def insert_user(self, username, hashed_password):
+    def insert_user(self, username, hashed_password) -> bool:
         """
         Insert a new user into the users table.
 
@@ -49,9 +49,10 @@ class Database:
             )
 
             self._connect.commit()
+            return True
 
-        except sqlite3.IntegrityError as e:
-            raise sqlite3.IntegrityError(f"User '{username}' already exists.") from e
+        except sqlite3.IntegrityError:
+            return False
 
     def retrieve_user_hash(self, username) -> str | None:
         """

@@ -52,9 +52,9 @@ class DummyMembersManager:
     def _username_exists(self, username) -> bool:
         return any(m["username"].lower() == username.lower() for m in self._members)
 
-    def add_user(self, username, password, totp_enabled=False):
+    def add_user(self, username, password, totp_enabled=False) -> dict | None:
         if self._username_exists(username):
-            raise ValueError(f"Username '{username}' already exists.")
+            return None
 
         strength = self._classify_password(password)
         new_user = self._generate_member(strength, index=None, username=username)
@@ -73,6 +73,7 @@ class DummyMembersManager:
             self._totp_users.append(new_user)
 
         self.save_members_to_json()
+        return new_user
 
     def _generate_member(self, strength, index, username=None) -> dict:
         return {
@@ -162,12 +163,6 @@ class DummyMembersManager:
 
         with self._users_file_path.open("w", encoding="utf-8") as f:
             json.dump(data_to_save, f, indent=4)
-
-    def get_totp_secret(self, username):
-        for member in self._members:
-            if member["username"].lower() == username.lower():
-                return member.get("totp_secret")
-        return None
 
     @staticmethod
     def generate_password(strength) -> str:

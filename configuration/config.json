@@ -21,7 +21,7 @@
     "rate_limit_parameters": { "tokens": 4, "refill_rate_tps": 0 },
     "lockout_parameters": { "tokens": 9, "token_rate": 10, "duration_rate": 1, "duration_mm": 0.1 },
     "captcha_parameters": { "tokens": 3, "time_to_live_ss": 5 },
-    "totp_parameters": { "number_of_users": 5, "tokens": 3, "time_step_ss": 5, "tolerance_ss": 1 }
+    "totp_parameters": { "number_of_users": 5, "tokens": 3, "time_step_ss": 30, "tolerance_ss": 30 }
   },
 
   "password_parameters": {

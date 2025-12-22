@@ -5,11 +5,11 @@ from application import AuthServer
 import tempfile
 
 _protections_1 = {
-    # "pepper": "137379782",
-    # "rate_limit": {"tokens": 4, "refill_rate_tps": 0},
-    # "lockout": {"tokens": 3, "token_rate": 2, "duration_rate": 1, "duration_mm": 0.1},
+    "pepper": "137379782",
+    "rate_limit": {"tokens": 3, "refill_rate_tps": 1},
+    "lockout": {"tokens": 3, "token_rate": 2, "duration_rate": 1, "duration_mm": 0},
     "captcha": {"tokens": 3, "time_to_live": 60},
-    # "totp": {"number_of_users": 5, "length": 5, "period_ss": 30}
+    "totp": {"number_of_users": 5, "tokens": 3, "time_step_ss": 30, "tolerance_ss": 30}
 }
 
 

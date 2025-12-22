@@ -1,6 +1,6 @@
 from functools import partial
 
-from flask import Flask, request, jsonify
+from flask import Flask, request
 from pathlib import Path
 import time
 
@@ -50,7 +50,9 @@ class AuthServer:
             start_time = time.perf_counter()
 
             username = member["username"]
+
             self._database.insert_user(username, self._hash_function(member["password"]))
+            self._protection_handler.register_totp_if_needed(member)
             self._response_handler.register_dummy_member("system", username, start_time)
 
     def _register_routes(self):
@@ -73,8 +75,12 @@ class AuthServer:
         if not username or not password or not ip_address:
             return self._response_handler.register_invalid_input(ip_address, username, start_time)
 
-        self._dummy_members_manager.add_user(username, password, self._protection_handler.totp_enabled)
-        self._database.insert_user(username, self._hash_function(password))
+        member = self._dummy_members_manager.add_user(username, password, self._protection_handler.totp_enabled)
+
+        if member is None or not self._database.insert_user(username, self._hash_function(password)):
+            return self._response_handler.register_username_conflict(ip_address, username, start_time)
+
+        self._protection_handler.register_totp_if_needed(member)
 
         return self._response_handler.register_success(ip_address, username, start_time)
 
@@ -107,16 +113,21 @@ class AuthServer:
 
         verify_callable = partial(self._verify_function, stored_hashed_password, password)
 
+        # Lockout
         if self._protection_handler.lockout:
             return self._protection_handler.handle_lockout(
                 self._response_handler, verify_callable, ip_address, username, start_time
             )
 
         if verify_callable():
-            self._protection_handler.reset_captcha_failures(ip_address)
+            if self._protection_handler.totp_required(username):
+                return self._response_handler.login_totp_required(ip_address, username, start_time)
+
+            # self._protection_handler.reset_captcha_failures(ip_address)
             return self._response_handler.login_success(ip_address, username, start_time)
 
-        self._protection_handler.captcha.register_failure(ip_address)
+        # self._protection_handler.captcha.register_failure(ip_address)
+        self._protection_handler.captcha_register_failure(ip_address)
         return self._response_handler.login_fail(ip_address, username, start_time)
 
     def _captcha_verify(self):
@@ -125,7 +136,6 @@ class AuthServer:
         ip_address = request.remote_addr or None
 
         if self._protection_handler.captcha.validate_token(token, ip_address):
-            self._protection_handler.reset_captcha_failures(ip_address)
             return self._response_handler.valid_captcha()
 
         return self._response_handler.invalid_captcha()
@@ -141,8 +151,24 @@ class AuthServer:
         return self._response_handler.get_token_captcha(token)
 
     def _login_totp(self):
-        print(self._protection_handler.totp_enabled)
-        return jsonify({"TODO": "to be implemented"})
+        start_time = time.perf_counter()
+
+        data = request.get_json(force=True)
+        username = data.get("username")
+        code = data.get("code", "")
+        ip_address = request.remote_addr or None
+
+        if not username or not code:
+            return self._response_handler.login_invalid_input(ip_address, username, start_time)
+
+        if self._protection_handler.totp.totp_blocked(username):
+            return self._response_handler.login_totp_blocked(ip_address, username, start_time)
+
+        if not self._protection_handler.totp.verify(username, code):
+            return self._response_handler.login_totp_fail(ip_address, username, start_time)
+
+        # self._protection_handler.reset_captcha_failures(ip_address)
+        return self._response_handler.login_success(ip_address, username, start_time)
 
     def close_database(self):
         self._database.close()

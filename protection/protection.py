@@ -49,7 +49,7 @@ class ProtectionHandler:
 
     @property
     def totp_enabled(self):
-        return bool(self.totp)
+        return self.totp is not None
 
     def rate_limiter_allow_request(self, ip_address):
         return self.rate_limiter and not self.rate_limiter.allow_request(ip_address)
@@ -59,18 +59,36 @@ class ProtectionHandler:
         if not allowed:
             return response_handler.login_lockout(ip_address, username, message, start_time)
         elif verify_callable():
-            self.reset_captcha_failures(ip_address)
+            # self.reset_captcha_failures(ip_address)
+
+            if self.totp_required(username):
+                return response_handler.login_totp_required(ip_address, username, start_time)
+
             self.lockout.reset_after_successful_login(username)
             return response_handler.login_success(ip_address, username, start_time)
+
+        self.lockout.lock_user(username)
         return response_handler.login_fail(ip_address, username, start_time)
 
     def captcha_required(self, ip_address):
         return self.captcha and self.captcha.captcha_required(ip_address)
 
-    def reset_captcha_failures(self, ip_address):
+    def captcha_register_failure(self, ip_address):
         if self.captcha:
-            self.captcha.reset_failures(ip_address)
+            self.captcha.register_failure(ip_address)
 
     def captcha_blocked(self, ip_address):
         if self.captcha:
             return self.captcha.captcha_blocked(ip_address)
+
+    def register_totp_if_needed(self, member):
+        if self.totp is None:
+            return
+
+        totp_secret = member["totp_secret"]
+
+        if totp_secret is not None:
+            self.totp.register_user(member["username"], totp_secret)
+
+    def totp_required(self, username):
+        return self.totp and self.totp.totp_enabled(username)

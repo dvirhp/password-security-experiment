@@ -38,6 +38,10 @@ class Lockout:
             "last_lockout_duration": self._base_duration_sec
         }
 
+    def lock_user(self, username):
+        user = self._users[username]
+        user["locked_until"] = time.perf_counter() + user["last_lockout_duration"]
+
     def allow_attempt(self, username):
         """
         Returns (allowed, message)
