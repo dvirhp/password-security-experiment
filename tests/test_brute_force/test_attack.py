@@ -1,25 +1,10 @@
-# from attack.brute_force import BruteForceAttack
-#
-#
-# def test_bruteforce_attack_runs():
-#     attack = BruteForceAttack(
-#         base_url="http://127.0.0.1:5000",
-#         username="non_existing_user",
-#         passwords=["a", "b", "c"]
-#     )
-#
-#     # If no exception is raised → test passed
-#     attack.run()
-
-
 import os
 import unittest
 from pathlib import Path
 import tempfile
-import random
 
 from application import AuthServer
-from configuration import hash_mode, protections, generate_password
+from configuration import hash_mode, generate_password
 
 DIRECTORY_PATH = Path(__file__).parent
 
@@ -55,12 +40,10 @@ class AuthServerTestCase(unittest.TestCase):
         The correct password is injected at a random attempt.
         """
 
-        username, _, user_password = self.auth.dummy_members_manager.get_random_user("weak")
+        username = self.auth.dummy_members_manager.get_random_user("weak")
 
         max_attempts = 50_000
         success = False
-
-        print(username, " ", user_password, " ")
 
         for attempt in range(1, max_attempts + 1):
 

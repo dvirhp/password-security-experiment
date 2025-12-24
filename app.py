@@ -1,24 +1,14 @@
-from statistics import plot_register_log_latency
+from pathlib import Path
 
 from application import AuthServer
+from configuration import hash_mode, get_hash_params, protections
 
-import tempfile
-
-_protections_1 = {
-    "pepper": "137379782",
-    "rate_limit": {"tokens": 3, "refill_rate_tps": 1},
-    "lockout": {"tokens": 3, "token_rate": 2, "duration_rate": 1, "duration_mm": 0},
-    "captcha": {"tokens": 3, "time_to_live": 60},
-    "totp": {"number_of_users": 5, "tokens": 3, "time_step_ss": 30, "tolerance_ss": 30}
-}
+DIRECTORY_PATH = Path(__file__).parent
 
 
 def main():
-    # plot_register_log_latency()
-    temp = tempfile.TemporaryDirectory()
-    server = AuthServer(directory_path=temp.name, enabled_protections=_protections_1)
-    print("Creating server...")
-    server.run(debug=True)
+    server = AuthServer(DIRECTORY_PATH, hash_mode, get_hash_params(hash_mode), protections)
+    server.run(debug=False)
 
 
 if __name__ == "__main__":

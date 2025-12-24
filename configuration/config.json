@@ -18,14 +18,14 @@
   },
 
   "protections_parameters": {
-    "rate_limit_parameters": { "tokens": 4, "refill_rate_tps": 0 },
-    "lockout_parameters": { "tokens": 9, "token_rate": 10, "duration_rate": 1, "duration_mm": 0.1 },
+    "rate_limit_parameters": { "tokens": 4, "refill_rate_tps": 1 },
+    "lockout_parameters": { "tokens": 9, "token_rate": 5, "duration_rate": 1, "duration_mm": 0.1 },
     "captcha_parameters": { "tokens": 3, "time_to_live_ss": 5 },
     "totp_parameters": { "number_of_users": 5, "tokens": 3, "time_step_ss": 30, "tolerance_ss": 30 }
   },
 
   "password_parameters": {
-    "weak": { "min_length": 4, "max_length": 6, "charset": "0123456789abcde" },
+    "weak": { "min_length": 4, "max_length": 5, "charset": "0123456ab" },
     "medium": { "min_length": 8, "max_length": 12, "include_upper": true, "include_digits": true },
     "strong": { "min_length": 14, "max_length": 20, "include_upper": true, "include_digits": true, "include_punctuation": true }
   }

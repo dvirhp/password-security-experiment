@@ -47,3 +47,21 @@ class Logger:
     def log_login(self, ip_address, username, result, status, message, start_time, end_time):
         latency_ms = (end_time - start_time) * 1000
         self._log(self._attempt_log, ip_address, username, result, "login", status, message, latency_ms)
+
+    @staticmethod
+    def log_experiment(path, experiment_id, parameters, success, attempts, message, latency_ms):
+        entry = {
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "experiment_id": experiment_id,
+            "attack_parameters": parameters["attack_parameters"],
+            "hash_mode": parameters["hash_mode"],
+            "hash_parameters": parameters["hash_parameters"],
+            "protections": parameters["protections"],
+            "success": success,
+            "attempts": attempts,
+            "message": message,
+            "latency_ms": round(latency_ms, 3)
+        }
+
+        with path.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(entry) + "\n")

@@ -1,27 +1,171 @@
-import requests
-
+import random
 import time
+
+from configuration import generate_password
+from application import HTTPStatus, CAPTCHA_REQUIRED, TOTP_REQUIRED, ACCOUNT_BLOCKED
+
+STRENGTHS = ["weak", "medium", "strong"]
+DEFAULT_CODE = "515151"  # attacker default guess
+MAX_ATTEMPTS_REACHED = "max attempts reached"
 
 
 class BruteForceAttack:
-    def __init__(self, base_url, username, passwords):
-        self.base_url = base_url
-        self.username = username
-        self.passwords = passwords
+    def __init__(self, client, rules):
+        self._client = client
+        self._rules = rules
+        self._ip_address = self._get_random_ip()
 
-    def run(self):
-        for password in self.passwords:
-            response = requests.post(
-                f"{self.base_url}/login",
-                json={
-                    "username": self.username,
-                    "password": password
-                }
-            )
+    def attack(self):
+        for attempt in range(self.max_attempts):
+            password = self._generate_random_password()
+            response = self._post(password)
 
-            print(
-                f"[ATTACK] Tried password='{password}' → "
-                f"status={response.status_code}"
-            )
+            result = self._handle_response(response, attempt)
+            if result is not None:
+                return result
 
-            time.sleep(0.1)  # simulate realistic attack pace
+        return False, self.max_attempts, MAX_ATTEMPTS_REACHED
+
+    def _handle_response(self, response, attempt):
+        status = response.status_code
+        data = response.get_json() or {}
+
+        if status == HTTPStatus.UNAUTHORIZED:
+            return None
+        elif status == HTTPStatus.OK:
+            return True, attempt, data.get("message")
+        elif status in (HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND):
+            return False, attempt, data.get("error")
+        elif status == HTTPStatus.TOO_MANY_REQUESTS:
+            self._handle_rate_limit()
+            return None
+        elif status == HTTPStatus.FORBIDDEN:
+            return self._handle_forbidden(data, attempt)
+        elif status == HTTPStatus.LOCKOUT:
+            return self._handle_lockout(data, attempt)
+
+        return False, attempt, "unexpected response"
+
+    def _handle_rate_limit(self):
+        if self.ip_switch_enabled:
+            self._ip_address = self._get_random_ip()
+        elif self.delay_ss:
+            time.sleep(self.delay_ss)
+
+    def _handle_forbidden(self, data, attempt):
+        error = data.get("error")
+
+        if error == CAPTCHA_REQUIRED:
+            return self._handle_captcha_required(attempt)
+        elif error == TOTP_REQUIRED:
+            self._post_totp(DEFAULT_CODE)  # attacker does not know the code
+            return None
+
+        return False, attempt, error
+
+    def _handle_captcha_required(self, attempt):
+        captcha_response = self._handle_captcha()
+
+        if captcha_response.status_code == HTTPStatus.ACCEPTED:
+            return None
+
+        data = captcha_response.get_json() or {}
+        return False, attempt, data.get("error")
+
+    def _handle_lockout(self, data, attempt):
+        error = data.get("error")
+
+        if error == ACCOUNT_BLOCKED and self.lockout_stop_enabled:
+            return False, attempt, error
+        elif self.delay_ss:
+            time.sleep(self.delay_ss)
+
+        return None
+
+    def _post(self, password):
+        return self._client.post(
+            "/login",
+            json={"username": self.username, "password": password},
+            environ_base={"REMOTE_ADDR": self._ip_address}
+        )
+
+    def _post_captcha(self, captcha_token):
+        return self._client.post(
+            "/captcha_verify",
+            json={"token": captcha_token},
+            environ_base={"REMOTE_ADDR": self._ip_address}
+        )
+
+    def _post_totp(self, totp_token):
+        return self._client.post(
+            "/login_totp",
+            json={"username": self.username, "code": totp_token},
+            environ_base={"REMOTE_ADDR": self._ip_address}
+        )
+
+    def _get_captcha(self):
+        return self._client.get(
+            "/admin/get_captcha_token",
+            query_string={"group_seed": self.seed},
+            environ_base={"REMOTE_ADDR": self._ip_address}
+        )
+
+    @property
+    def username(self):
+        return self._rules["username"]
+
+    @property
+    def max_attempts(self):
+        return self._rules["max_attempts"]
+
+    @property
+    def lockout_stop_enabled(self):
+        return self._rules["lockout_stop_enabled"]
+
+    @property
+    def ip_switch_enabled(self):
+        return self._rules["ip_switch_enabled"]
+
+    @property
+    def password_strength(self):
+        return self._rules["password_strength"]
+
+    @property
+    def alternate_strength_enabled(self):
+        return self._rules["alternate_strength_enabled"]
+
+    @property
+    def captcha_token_enabled(self):
+        return self._rules["captcha_token_enabled"]
+
+    @property
+    def seed(self):
+        return self._rules["seed"]
+
+    @property
+    def delay_ss(self):
+        return self._rules["delay_ss"]
+
+    def _generate_random_password(self):
+        if self.alternate_strength_enabled:
+            return generate_password(self._get_random_strength())
+        return generate_password(self.password_strength)
+
+    def _handle_captcha(self):
+        if not self.captcha_token_enabled:
+            return self._post_captcha(DEFAULT_CODE)
+
+        response = self._get_captcha()
+        if response.status_code != HTTPStatus.OK:
+            return response
+
+        token = response.get_json().get("captcha_token")
+        return self._post_captcha(token)
+
+    @staticmethod
+    def _get_random_strength():
+        return random.choice(STRENGTHS)
+
+    @staticmethod
+    def _get_random_ip():
+        return ".".join(str(random.randint(0, 255)) for _ in range(4))

@@ -42,6 +42,10 @@ class AuthServer:
         self._response_handler = ResponseHandler(logger)
 
     @property
+    def app(self):
+        return self._app
+
+    @property
     def dummy_members_manager(self) -> DummyMembersManager:
         return self._dummy_members_manager
 

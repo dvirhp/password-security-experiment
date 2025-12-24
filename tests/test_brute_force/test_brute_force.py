@@ -52,7 +52,7 @@ class BruteForceTestCase(unittest.TestCase):
         The correct password is injected at a random attempt.
         """
 
-        username, _, user_password = self.auth.dummy_members_manager.get_random_user("weak")
+        username = self.auth.dummy_members_manager.get_random_user("weak")
         ip_address = "192.666.1.10"
 
         # max_attempts = 50_000

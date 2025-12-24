@@ -1,69 +1,57 @@
-import os
+import json
 from pathlib import Path
-import tempfile
-from application import AuthServer
-
-from .latency_statistics import LatencyStatistics
-
-os.environ["pepper"] = "137379782"
-
-DIRECTORY_PATH = Path(__file__).parent / "plots"
-DIRECTORY_PATH.mkdir(exist_ok=True)
-
-protections_a = {
-    "pepper_enabled": False,
-    "rate_limit_enabled": False,
-    "lockout_enabled": False,
-    "captcha_enabled": False,
-    "totp_enabled": False
-}
-
-protections_b = {
-    "pepper_enabled": True,
-    "rate_limit_enabled": False,
-    "lockout_enabled": False,
-    "captcha_enabled": False,
-    "totp_enabled": False
-}
-
-params_list = [
-    {"hash_mode": "sha256", "hash_parameters": {"salt_length": 16}, "protections": protections_a},
-    {"hash_mode": "sha256", "hash_parameters": {"salt_length": 8}, "protections": protections_a},
-    {"hash_mode": "sha256", "hash_parameters": {"salt_length": 8}, "protections": protections_b},
-    {"hash_mode": "sha256", "hash_parameters": {"salt_length": 16}, "protections": protections_b},
-
-    {"hash_mode": "bcrypt", "hash_parameters": {"cost": 12}, "protections": protections_a},
-    {"hash_mode": "bcrypt", "hash_parameters": {"cost": 8}, "protections": protections_a},
-    {"hash_mode": "bcrypt", "hash_parameters": {"cost": 12}, "protections": protections_b},
-    {"hash_mode": "bcrypt", "hash_parameters": {"cost": 8}, "protections": protections_b},
-
-    {"hash_mode": "argon2id", "hash_parameters": {"time_cost": 1, "memory_cost": 65536, "parallelism": 1},
-     "protections": protections_a},
-    {"hash_mode": "argon2id", "hash_parameters": {"time_cost": 1, "memory_cost": 65536, "parallelism": 2},
-     "protections": protections_a},
-    {"hash_mode": "argon2id", "hash_parameters": {"time_cost": 1, "memory_cost": 65536, "parallelism": 1},
-     "protections": protections_b},
-    {"hash_mode": "argon2id", "hash_parameters": {"time_cost": 1, "memory_cost": 65536, "parallelism": 2},
-     "protections": protections_b}
-]
+import matplotlib.pyplot as plt
 
 
-def plot_register_log_latency(output_path=DIRECTORY_PATH):
-    logs = []
+class StatisticsPlotter:
+    def __init__(self, output_directory):
+        self._output_directory = Path(output_directory)
+        self._output_directory.mkdir(parents=True, exist_ok=True)
 
-    with tempfile.TemporaryDirectory() as temp_dir:
-        temp_dir_path = Path(temp_dir)
+    def plot_group_from_file(self, log_file_path, group_name):
+        success_rate, latency_per_attempt = self._extract_log_data(log_file_path)
 
-        for i, params in enumerate(params_list):
-            temp_path = temp_dir_path / f"exp{i}"
-            temp_path.mkdir()
+        fig, axes = plt.subplots(1, 2, figsize=(10, 4))
+        fig.suptitle(group_name)
 
-            auth = AuthServer(temp_path, params["hash_mode"], params["hash_parameters"], params["protections"])
+        axes[0].bar(["Success rate"], [success_rate])
+        axes[0].set_ylim(0, 1)
+        axes[0].set_ylabel("Rate")
+        axes[0].set_title("Success Rate")
 
-            auth.close_database()
+        axes[1].boxplot(latency_per_attempt, vert=True)
+        axes[1].set_ylabel("Latency per attempt (ms)")
+        axes[1].set_title("Latency / Attempt")
 
-            log_file = temp_path / "register.log"
-            if log_file.exists():
-                logs.append(log_file)
+        plt.tight_layout(rect=(0.0, 0.0, 1.0, 0.95))
 
-        LatencyStatistics.generate_latency_graph_multi(logs, output_png=output_path / "latency_comparison.png")
+        output_path = self._output_directory / f"{group_name.replace(':', '_')}.png"
+        plt.savefig(output_path)
+        plt.close()
+
+    @staticmethod
+    def _extract_log_data(log_file_path):
+        successes = []
+        latency_per_attempt = []
+
+        with log_file_path.open("r", encoding="utf-8") as f:
+            for line in f:
+                if not line.strip():
+                    continue
+
+                record = json.loads(line)
+
+                successes.append(1 if record["success"] else 0)
+
+                attempts = record.get("attempts", 1)
+                latency = record.get("latency_ms", 0.0)
+
+                if attempts > 0:
+                    latency_per_attempt.append(latency / attempts)
+
+        if successes:
+            success_rate = sum(successes) / len(successes)
+        else:
+            success_rate = 0
+
+        return success_rate, latency_per_attempt

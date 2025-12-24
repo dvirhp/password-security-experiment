@@ -129,7 +129,7 @@ class DummyMembersManager:
             m["totp_secret"] = pyotp.random_base32()
             self._totp_users.append(m)
 
-    def get_random_user(self, strength, is_totp=False) -> tuple[str, str, str]:
+    def get_random_user(self, strength, is_totp=False) -> str:
         """
         Returns a user filtered by:
             - strength  ("weak", "medium", "strong")
@@ -145,10 +145,7 @@ class DummyMembersManager:
 
         user = random.choice(filtered)
 
-        # WARNING: In real systems, never return or expose the TOTP secret.
-        # It should be encrypted and stored securely.
-
-        return user["username"], user["totp_secret"], user["password"]  # TODO: REVIEW
+        return user["username"]
 
     def save_members_to_json(self):
         data_to_save = [

@@ -2,10 +2,12 @@ import time
 from collections import defaultdict
 from configuration import lockout_parameters
 
+from application import ACCOUNT_BLOCKED, ACCOUNT_TEMPORARILY_BLOCKED
+
 
 RESULTS = {
-    "PERMANENTLY_BLOCKED": (False, "account blocked, contact admin"),
-    "TEMPORARILY_LOCKED": (False, "account temporarily locked"),
+    "PERMANENTLY_BLOCKED": (False, ACCOUNT_BLOCKED),
+    "TEMPORARILY_LOCKED": (False, ACCOUNT_TEMPORARILY_BLOCKED),
     "ALLOWED": (True, None)
 }
 

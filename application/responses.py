@@ -2,17 +2,7 @@ import time
 
 from flask import jsonify
 
-HTTP_OK = 200
-HTTP_CREATED = 201
-HTTP_ACCEPTED = 202
-HTTP_NO_CONTENT = 204
-HTTP_BAD_REQUEST = 400
-HTTP_UNAUTHORIZED = 401
-HTTP_FORBIDDEN = 403
-HTTP_NOT_FOUND = 404
-HTTP_CONFLICT = 409
-HTTP_LOCKOUT = 423
-HTTP_TOO_MANY_REQUESTS = 429
+from .http_status import HTTPStatus, CAPTCHA_REQUIRED, TOTP_REQUIRED, ACCOUNT_BLOCKED
 
 
 class ResponseHandler:
@@ -32,7 +22,7 @@ class ResponseHandler:
             ip_address,
             username,
             "success",
-            HTTP_CREATED,
+            HTTPStatus.CREATED,
             "user created",
             start_time,
             time.perf_counter()
@@ -43,7 +33,7 @@ class ResponseHandler:
             ip_address,
             username,
             "fail",
-            HTTP_CONFLICT,
+            HTTPStatus.CONFLICT,
             "error",
             "username already exists",
             start_time,
@@ -55,7 +45,7 @@ class ResponseHandler:
             ip_address,
             username,
             "fail",
-            HTTP_BAD_REQUEST,
+            HTTPStatus.BAD_REQUEST,
             "error",
             "username or password are missing",
             start_time,
@@ -67,7 +57,7 @@ class ResponseHandler:
             ip_address,
             username,
             "success",
-            HTTP_CREATED,
+            HTTPStatus.CREATED,
             "message",
             "user created",
             start_time,
@@ -79,7 +69,7 @@ class ResponseHandler:
             ip_address,
             username,
             "fail",
-            HTTP_BAD_REQUEST,
+            HTTPStatus.BAD_REQUEST,
             "error",
             "username or password are missing",
             start_time,
@@ -91,7 +81,7 @@ class ResponseHandler:
             ip_address,
             username,
             "fail",
-            HTTP_NOT_FOUND,
+            HTTPStatus.NOT_FOUND,
             "error",
             "user not found",
             start_time,
@@ -103,7 +93,7 @@ class ResponseHandler:
             ip_address,
             username,
             "success",
-            HTTP_OK,
+            HTTPStatus.OK,
             "message",
             "login success",
             start_time,
@@ -115,7 +105,7 @@ class ResponseHandler:
             ip_address,
             username,
             "fail",
-            HTTP_UNAUTHORIZED,
+            HTTPStatus.UNAUTHORIZED,
             "error",
             "unauthorized attempt",
             start_time,
@@ -127,7 +117,7 @@ class ResponseHandler:
             ip_address,
             username,
             "fail",
-            HTTP_TOO_MANY_REQUESTS,
+            HTTPStatus.TOO_MANY_REQUESTS,
             "error",
             "too many requests",
             start_time,
@@ -139,7 +129,7 @@ class ResponseHandler:
             ip_address,
             username,
             "fail",
-            HTTP_LOCKOUT,
+            HTTPStatus.LOCKOUT,
             "error",
             message,
             start_time,
@@ -151,9 +141,9 @@ class ResponseHandler:
             ip_address,
             username,
             "fail",
-            HTTP_FORBIDDEN,
+            HTTPStatus.FORBIDDEN,
             "error",
-            "captcha required",
+            CAPTCHA_REQUIRED,
             start_time,
             time.perf_counter()
         )
@@ -163,9 +153,9 @@ class ResponseHandler:
             ip_address,
             username,
             "fail",
-            HTTP_LOCKOUT,
+            HTTPStatus.LOCKOUT,
             "error",
-            "account blocked, contact admin",
+            ACCOUNT_BLOCKED,
             start_time,
             time.perf_counter()
         )
@@ -175,9 +165,9 @@ class ResponseHandler:
             ip_address,
             username,
             "fail",
-            HTTP_FORBIDDEN,
+            HTTPStatus.FORBIDDEN,
             "error",
-            "totp required",
+            TOTP_REQUIRED,
             start_time,
             time.perf_counter()
         )
@@ -190,7 +180,7 @@ class ResponseHandler:
             ip_address,
             username,
             "fail",
-            HTTP_UNAUTHORIZED,
+            HTTPStatus.UNAUTHORIZED,
             "error",
             "incorrect totp",
             start_time,
@@ -199,12 +189,12 @@ class ResponseHandler:
 
     @staticmethod
     def get_token_captcha(token):
-        return jsonify({"captcha_token": token}), HTTP_OK
+        return jsonify({"captcha_token": token}), HTTPStatus.OK
 
     @staticmethod
     def valid_captcha():
-        return jsonify({"message": "ip unlocked"}), HTTP_ACCEPTED
+        return jsonify({"message": "ip unlocked"}), HTTPStatus.ACCEPTED
 
     @staticmethod
     def invalid_captcha():
-        return jsonify({"error": "invalid captcha"}), HTTP_BAD_REQUEST
+        return jsonify({"error": "invalid captcha"}), HTTPStatus.BAD_REQUEST

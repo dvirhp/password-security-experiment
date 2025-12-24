@@ -1,0 +1,24 @@
+{
+  "hash_options": {
+    "sha256": { "salt_length": 16 },
+    "bcrypt": { "cost": 12 },
+    "argon2id": { "time_cost": 1, "memory_cost": 65536, "parallelism": 1 }
+  },
+
+  "protections": {
+    "rate_limit": {"tokens": [3, 5], "refill_rate_tps": [1, 2]},
+    "captcha": {"tokens": [3], "time_to_live": [60, 120]},
+    "lockout": {"tokens": [3], "token_rate": [2], "duration_rate": [1], "duration_mm": [0, 5]},
+    "totp": {"number_of_users": [5, 10], "tokens": [3], "time_step_ss": [30], "tolerance_ss": [30]}
+  },
+
+  "attack_options": {
+    "password_strength": ["weak", "medium", "strong"],
+    "max_attempts": [50000],
+    "delay_ss": [0, 0.1, 1],
+    "alternate_strength_enabled": [true, false],
+    "ip_switch_enabled": [true, false],
+    "lockout_stop_enabled": [true, false],
+    "captcha_token_enabled": [true, false]
+  }
+}

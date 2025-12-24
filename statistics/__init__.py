@@ -1,1 +1,1 @@
-from .statistics import plot_register_log_latency
+from .statistics import StatisticsPlotter
