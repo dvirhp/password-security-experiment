@@ -79,7 +79,8 @@ def get_hashing_function(mode=hash_mode, hash_params=None, pepper=None):
         raise ValueError(f"Invalid hashed mode in config: {mode}")
 
     # pepper = enabled_protections.get("pepper", "") if enabled_protections else ""
-    pepper = pepper or get_environmental_pepper() or ""
+    # pepper = pepper or get_environmental_pepper() or ""
+    pepper = pepper or ""
 
     def wrapper(value):
         return func(value + pepper, hash_params)
@@ -95,7 +96,8 @@ def get_hashing_verification_function(mode=hash_mode, hash_params=None, pepper=N
 
     hash_params = get_hash_params(mode) if hash_params is None else hash_params
     # pepper = enabled_protections.get("pepper", "") if enabled_protections else ""
-    pepper = pepper or get_environmental_pepper() or ""
+    # pepper = pepper or get_environmental_pepper() or ""
+    pepper = pepper or ""
 
     if mode != "argon2id":
         def wrapper(hashed, candidate):

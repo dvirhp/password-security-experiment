@@ -60,7 +60,6 @@ def is_valid_experiment(protections, attack):
     has_lockout = "lockout" in protections
     has_totp = "totp" in protections
 
-    # Boolean relevance pruning
     if attack["ip_switch_enabled"] and not has_rate_limit:
         return False
 
@@ -95,7 +94,6 @@ def generate_experiment_configs():
                 protection_name: protection
             })
 
-    # ---- Attack parameter combinations ----
     attack_keys = list(attack_cfg.keys())
     attack_variants = [
         dict(zip(attack_keys, combo))
@@ -110,7 +108,6 @@ def generate_experiment_configs():
                     continue
 
                 attack_parameters = dict(attack_parameters)  # defensive copy
-                # attack_parameters["username"] = derive_username(attack_parameters, protections)
                 attack_parameters["seed"] = DEFAULT_TEST_SEED
 
                 exp = {

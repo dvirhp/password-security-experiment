@@ -6,20 +6,14 @@ from pathlib import Path
 from application import AuthServer, Logger
 from attack import BruteForceAttack
 
-from experiments import generate_tests
-
-DIRECTORY_PATH = Path(__file__).parent
-
 
 class ExperimentHandler:
-    def __init__(self, experiment_generator):
-        # self._global_log_directory = tempfile.TemporaryDirectory()
-        self._global_log_path = Path(r"C:\Users\barto\Documents\School\20940 - Introduction to Cyber "
-                                          r"Security\Assignments\Maman 16\Maman 16\tests\bucket")
-        # self._global_log_path = Path(self._global_log_directory.name)
-        self._global_log_file = self._global_log_path / "attempt.log"
+    def __init__(self, path, group_name, experiments):
+        self._experiments = experiments
+        self._global_log_path = Path(path)
+        self._global_log_path.mkdir(parents=True, exist_ok=True)
+        self._global_log_file = self._global_log_path / f"{group_name.replace(':', '_')}.log"
         self._log = Logger.log_experiment
-        self._experiment_generator = experiment_generator
 
     def _ensure_group_dir(self, group):
         path = self._global_log_path / group.replace(":", "_")
@@ -71,12 +65,17 @@ class ExperimentHandler:
         self._log(self._global_log_file, f"{index:04d}.log", experiment, success, attempts, message, latency_ms)
 
     def _run_all_experiments(self):
-        for index, experiment in enumerate(self._experiment_generator(), start=1):
+        for index, experiment in enumerate(self._experiments, start=1):
+
+            #  TODO: REMOVE AFTER TESTING
+
+            if index in {5, 6, 9, 10, 11, 12, 24, 27}:
+                continue
+
+            #  TODO: REMOVE AFTER TESTING
+
             print(f"Running {index:04d}")
             self._run_single_experiment(experiment, index)
-
-    # def cleanup_all(self):
-    #     self._global_log_directory.cleanup()
 
     def _print_global_log(self, expect_lines=None):  # TODO: REMOVE AFTER TESTING
         """
@@ -101,40 +100,12 @@ class ExperimentHandler:
                 f"Expected {expect_lines} lines, got {len(lines)}"
             )
 
-    def test_handler(self):
-        for index, experiment in enumerate(self._experiment_generator(), start=1):
-            print(f"Running {index:04d}")
-
-            # if not (index == 1 or 14 > index > 9):
-            #     continue  # TODO: REMOVE AFTER TESTING
-
-            self._run_single_experiment(experiment, index)
-
-            # if index == 1:
-            #     break  # TODO: REMOVE AFTER TESTING
-
-        self._print_global_log()
-        # self.cleanup_all()
-
     @property
     def global_log_file(self):
         return self._global_log_file
 
+    def run(self):
+        self._run_all_experiments()
+        self._print_global_log()
 
-def main():
-    # from tests.test_experiment_parameters.test_sample_experiments import generate_tests as generate_experiment_configs
-    from statistics import StatisticsPlotter
-
-    experiment_handler = ExperimentHandler(generate_tests)
-    experiment_handler.test_handler()
-
-    path = r'C:\Users\barto\Documents\School\20940 - Introduction to Cyber Security\Assignments\Maman 16\Maman ' \
-           r'16\statistics\plots'
-    plotter = StatisticsPlotter(path)
-    plotter.plot_group_from_file(experiment_handler.global_log_file, "total:exp")
-
-    # experiment_handler.cleanup_all()
-
-
-if __name__ == "__main__":
-    main()
+        return self._global_log_file

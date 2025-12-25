@@ -85,8 +85,8 @@ class Config:
 
             key = name.replace("_enabled", "")
 
-            if key == "pepper":
-                result[key] = self.get_environmental_pepper()
+            if key == "pepper" and self.get_environmental_pepper():
+                result[key] = self._pepper_cache
             else:
                 result[key] = self.protections_parameters.get(key + "_parameters", {})
 

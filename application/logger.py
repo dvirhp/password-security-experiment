@@ -50,6 +50,11 @@ class Logger:
 
     @staticmethod
     def log_experiment(path, experiment_id, parameters, success, attempts, message, latency_ms):
+        pepper = parameters["protections"].get("pepper", None)
+        if pepper:
+            parameters["protections"] = True
+        else:
+            parameters["protections"].pop("pepper", None)
         entry = {
             "timestamp": datetime.utcnow().isoformat() + "Z",
             "experiment_id": experiment_id,

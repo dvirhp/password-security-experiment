@@ -4,8 +4,7 @@ from flask import Flask, request
 from pathlib import Path
 import time
 
-from configuration import hash_mode, get_hash_params, protections, DummyMembersManager,\
-    GROUP_SEED, get_environmental_pepper
+from configuration import hash_mode, get_hash_params, protections, DummyMembersManager, GROUP_SEED
 from protection import ProtectionHandler
 
 from .hash import get_hashing_function, get_hashing_verification_function
@@ -33,7 +32,13 @@ class AuthServer:
         selected_hash_mode = selected_hash_mode or hash_mode
         hash_parameters = hash_parameters or get_hash_params(selected_hash_mode)
         enabled_protections = enabled_protections or protections
-        pepper = enabled_protections.get("pepper", []) or get_environmental_pepper()
+        # pepper = enabled_protections.get("pepper", []) or get_environmental_pepper()
+        pepper = enabled_protections.get("pepper", None)
+        if pepper:
+            enabled_protections["pepper"] = True
+        else:
+            enabled_protections.pop("pepper", None)
+
         logger = Logger(self._directory_path, GROUP_SEED, hash_mode, hash_parameters, enabled_protections)
 
         self._protection_handler = ProtectionHandler(enabled_protections)
