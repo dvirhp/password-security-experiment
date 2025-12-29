@@ -1,3 +1,14 @@
+"""
+Experimental experiments' generator (future work).
+
+This module is NOT part of the core project logic.
+It is intended for future experimentation, benchmarking, and analysis of
+authentication defenses under different attack configurations.
+
+The code is kept here for extensibility and research purposes, but it is
+not used by the main application runtime.
+"""
+
 import json
 from pathlib import Path
 from collections import defaultdict
@@ -94,20 +105,6 @@ class ExperimentsGenerator:
 
         return buckets
 
-    # def generate_no_protection_tests():
-    #     tests = []
-    #
-    #     for hash_mode in self._data["hash_options"]:
-    #         for strength in STRENGTH:
-    #             tests.append({
-    #                 "hash_mode": hash_mode,
-    #                 "hash_parameters": self._data["hash_options"][hash_mode],
-    #                 "protections": dict(BASE_PROTECTIONS),
-    #                 "attack_parameters": base_attack_params(strength),
-    #             })
-    #
-    #     return tests
-
     def _generate_no_protection_tests(self):
         tests = []
 
@@ -151,17 +148,11 @@ class ExperimentsGenerator:
                             "attack_parameters": ap,
                         })
                 else:
-
-                    # TODO REVIEW
-                    ap = self._base_attack_params(strength)
-                    ap["lockout_stop_enabled"] = True
-                    # TODO REVIEW
-
                     tests.append({
                         "hash_mode": "sha256",
                         "hash_parameters": self._data["hash_options"]["sha256"],
                         "protections": self._build_protections(prot_set),
-                        "attack_parameters": ap,  # base_attack_params(strength), TODO REVIEW
+                        "attack_parameters": self._base_attack_params(strength)
                     })
 
         return tests
@@ -199,7 +190,6 @@ class ExperimentsGenerator:
         for captcha_token_enabled in [True, False]:
             ap = self._base_attack_params("weak")
             ap["captcha_token_enabled"] = captcha_token_enabled
-            ap["lockout_stop_enabled"] = True  # TODO: REMOVE
 
             tests.append({
                 "hash_mode": "argon2id",

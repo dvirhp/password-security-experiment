@@ -8,10 +8,10 @@ from configuration import hash_mode, get_hash_params, protections, generate_pass
 
 DIRECTORY_PATH = Path(__file__).parent
 
-os.environ["pepper"] = "137379782"
+os.environ["pepper"] = "25977022"
 
 _protections_1 = {
-    "pepper": "137379782",
+    "pepper": "25977022",
     "rate_limit": {"tokens": 4, "refill_rate_tps": 0},
     "lockout": {"tokens": 9, "token_rate": 10, "duration_rate": 1, "duration_mm": 0.1},
     "captcha": {"tokens": 15},
@@ -90,5 +90,5 @@ class BruteForceTestCase(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    os.environ["pepper"] = "137379782"
+    os.environ["pepper"] = "25977022"
     unittest.main()

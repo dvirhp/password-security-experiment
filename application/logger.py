@@ -1,15 +1,27 @@
 import json
-from datetime import datetime
 from pathlib import Path
+from datetime import datetime
 
 
 class Logger:
     """
-    Responsible for logging authentication attempts
-    in JSON-lines format, as required by the project.
+    Handles structured logging for authentication-related events.
+
+    Logs are written in JSON Lines (JSONL) format to allow
+    easy parsing, aggregation, and analysis.
     """
 
     def __init__(self, directory_path, group_seed, selected_hash_mode, hash_param, protections):
+        """
+        Initialize log file paths and metadata shared across all log entries.
+
+        Args:
+            directory_path (str | Path): Directory where log files are stored.
+            group_seed: Identifier used to correlate logs across deployments.
+            selected_hash_mode (str): Active password hashing algorithm.
+            hash_param (dict): Parameters used by the hashing algorithm.
+            protections (dict): Enabled security protections (e.g., pepper, CAPTCHA).
+        """
         self._log_directory = Path(directory_path)
 
         self._attempt_log = self._log_directory / "attempts.log"
@@ -21,7 +33,14 @@ class Logger:
         self._protections = protections
 
     def _log(self, path, ip_address, username, result, action, status, message, latency_ms):
-        """Write a single JSONL entry to a log file."""
+        """
+        Write a single authentication event to a log file.
+
+        Args:
+            path (Path): Target log file.
+            action (str): Action performed (e.g., "login", "register").
+            latency_ms (float): Request duration in milliseconds.
+        """
         entry = {
             "timestamp": datetime.utcnow().isoformat() + "Z",
             "group_seed": self._group_seed,
@@ -41,18 +60,25 @@ class Logger:
             f.write(json.dumps(entry) + "\n")
 
     def log_register(self, ip_address, username, result, status, message, start_time, end_time):
+        """Log a user registration attempt."""
         latency_ms = (end_time - start_time) * 1000
         self._log(self._register_log, ip_address, username, result, "register", status, message, latency_ms)
 
     def log_login(self, ip_address, username, result, status, message, start_time, end_time):
+        """Log a user login attempt."""
         latency_ms = (end_time - start_time) * 1000
         self._log(self._attempt_log, ip_address, username, result, "login", status, message, latency_ms)
 
     @staticmethod
     def log_experiment(path, experiment_id, parameters, success, attempts, message, latency_ms):
+        """
+        Log the result of an offline security experiment or attack simulation.
+
+        Sensitive values (e.g., pepper contents) are redacted before logging.
+        """
         pepper = parameters["protections"].get("pepper", None)
         if pepper:
-            parameters["protections"] = True
+            parameters["protections"]["pepper"] = True
         else:
             parameters["protections"].pop("pepper", None)
         entry = {

@@ -18,11 +18,11 @@ It also provides helpers to:
     - fetch a random username filtered by password strength and TOTP usage
 """
 
-import random
-import secrets
-import string
-import pyotp
 import json
+import pyotp
+import random
+import string
+import secrets
 from pathlib import Path
 
 from .config import config

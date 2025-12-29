@@ -6,7 +6,7 @@ from attack import BruteForceAttack
 from configuration import hash_mode, get_hash_params
 
 BASE_PROTECTIONS = {
-    "pepper": "137379782"
+    "pepper": "25977022"
 }
 
 RATE_LIMIT_ONLY = {
@@ -70,7 +70,7 @@ class BruteForceAttackTestCase(unittest.TestCase):
             "lockout_stop_enabled": True,
             "password_strength": "weak",
             "captcha_token_enabled": True,
-            "seed": "137379782",
+            "seed": "25977022",
             "delay_ss": 0
         }
 

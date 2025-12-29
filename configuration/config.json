@@ -7,7 +7,7 @@
     "argon2id": { "time_cost": 1, "memory_cost": 65536, "parallelism": 1 }
   },
 
-  "group_seed": "137379782",
+  "group_seed": "25977022",
 
   "protections": {
     "pepper_enabled": true,

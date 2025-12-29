@@ -1,8 +1,7 @@
-from functools import partial
-
-from flask import Flask, request
-from pathlib import Path
 import time
+from pathlib import Path
+from functools import partial
+from flask import Flask, request
 
 from configuration import hash_mode, get_hash_params, protections, DummyMembersManager, GROUP_SEED
 from protection import ProtectionHandler
@@ -14,7 +13,21 @@ from .responses import ResponseHandler
 
 
 class AuthServer:
+    """
+    Main authentication server coordinating hashing, protections,
+    persistence, logging, and HTTP routing.
+    """
+
     def __init__(self, directory_path, selected_hash_mode=None, hash_parameters=None, enabled_protections=None):
+        """
+        Initialize all server components and register HTTP routes.
+
+        Args:
+            directory_path (str | Path): Base directory for database and logs.
+            selected_hash_mode (str, optional): Hash algorithm override.
+            hash_parameters (dict, optional): Hash parameter override.
+            enabled_protections (dict, optional): Security protections configuration.
+        """
         self._directory_path = Path(directory_path)
 
         self._database = Database(self._directory_path / "database.db")
@@ -23,17 +36,19 @@ class AuthServer:
 
         self._setup(selected_hash_mode, hash_parameters, enabled_protections)
 
-        self._register_dummy_members()  # Register Dummy members
+        self._register_dummy_members()  # Preload dummy users for testing / evaluation
 
         self._app = Flask(__name__)
         self._register_routes()
 
     def _setup(self, selected_hash_mode=None, hash_parameters=None, enabled_protections=None):
+        """Configure hashing, protections, logging, and response handling."""
         selected_hash_mode = selected_hash_mode or hash_mode
         hash_parameters = hash_parameters or get_hash_params(selected_hash_mode)
         enabled_protections = enabled_protections or protections
-        # pepper = enabled_protections.get("pepper", []) or get_environmental_pepper()
         pepper = enabled_protections.get("pepper", None)
+
+        # Pepper is used at runtime but never logged in plaintext
         if pepper:
             enabled_protections["pepper"] = True
         else:
@@ -48,13 +63,19 @@ class AuthServer:
 
     @property
     def app(self):
+        """Expose the underlying Flask application."""
         return self._app
 
     @property
     def dummy_members_manager(self) -> DummyMembersManager:
+        """Access the dummy members' manager."""
         return self._dummy_members_manager
 
     def _register_dummy_members(self):
+        """
+        Insert predefined dummy users into the database and register
+        any required protections (e.g., TOTP).
+        """
         for member in self._dummy_members_manager.members:
             start_time = time.perf_counter()
 
@@ -65,6 +86,7 @@ class AuthServer:
             self._response_handler.register_dummy_member("system", username, start_time)
 
     def _register_routes(self):
+        """Register all HTTP endpoints."""
         self._app.add_url_rule("/register", "register", self._register, methods=["POST"])
         self._app.add_url_rule("/login", "login", self._login, methods=["POST"])
         self._app.add_url_rule("/login_totp", "login_totp", self._login_totp, methods=["POST"])
@@ -74,6 +96,7 @@ class AuthServer:
         self._app.add_url_rule("/captcha_verify", "captcha_verify", self._captcha_verify, methods=["POST"])
 
     def _register(self):
+        """Handle user registration requests."""
         start_time = time.perf_counter()
 
         data = request.get_json(force=True)
@@ -94,6 +117,7 @@ class AuthServer:
         return self._response_handler.register_success(ip_address, username, start_time)
 
     def _login(self):
+        """Handle primary login requests (username + password)."""
         start_time = time.perf_counter()
 
         data = request.get_json(force=True)
@@ -132,14 +156,13 @@ class AuthServer:
             if self._protection_handler.totp_required(username):
                 return self._response_handler.login_totp_required(ip_address, username, start_time)
 
-            # self._protection_handler.reset_captcha_failures(ip_address)
             return self._response_handler.login_success(ip_address, username, start_time)
 
-        # self._protection_handler.captcha.register_failure(ip_address)
         self._protection_handler.captcha_register_failure(ip_address)
         return self._response_handler.login_fail(ip_address, username, start_time)
 
     def _captcha_verify(self):
+        """Verify CAPTCHA tokens and unlock the requesting IP if valid."""
         data = request.get_json(force=True)
         token = data.get("token", "")
         ip_address = request.remote_addr or None
@@ -150,6 +173,10 @@ class AuthServer:
         return self._response_handler.invalid_captcha()
 
     def _get_captcha_token(self):
+        """
+        Administrative endpoint for generating CAPTCHA tokens.
+        Protected using a shared group seed.
+        """
         seed = request.args.get("group_seed")
         ip_address = request.remote_addr
 
@@ -160,6 +187,7 @@ class AuthServer:
         return self._response_handler.get_token_captcha(token)
 
     def _login_totp(self):
+        """Handle TOTP-based second-factor authentication."""
         start_time = time.perf_counter()
 
         data = request.get_json(force=True)
@@ -176,11 +204,12 @@ class AuthServer:
         if not self._protection_handler.totp.verify(username, code):
             return self._response_handler.login_totp_fail(ip_address, username, start_time)
 
-        # self._protection_handler.reset_captcha_failures(ip_address)
         return self._response_handler.login_success(ip_address, username, start_time)
 
     def close_database(self):
+        """Close the underlying database connection."""
         self._database.close()
 
     def run(self, **kwargs):
+        """Run the Flask development server."""
         self._app.run(**kwargs)

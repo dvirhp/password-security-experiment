@@ -9,7 +9,7 @@ from configuration import hash_mode, get_hash_params
 DIRECTORY_PATH = Path(__file__).parent
 
 BASE_PROTECTIONS = {
-    "pepper": "137379782"
+    "pepper": "25977022"
 }
 
 RATE_LIMIT_ONLY = {
@@ -34,10 +34,10 @@ TOTP_ONLY = {
 
 NO_PROTECTIONS = BASE_PROTECTIONS
 
-os.environ["pepper"] = "137379782"
+os.environ["pepper"] = "25977022"
 
 _protections = {
-    "pepper": "137379782",
+    "pepper": "25977022",
     "rate_limit": {"tokens": 3, "refill_rate_tps": 1},
     "lockout": {"tokens": 3, "token_rate": 2, "duration_rate": 1, "duration_mm": 0},
     "captcha": {"tokens": 3, "time_to_live": 60},

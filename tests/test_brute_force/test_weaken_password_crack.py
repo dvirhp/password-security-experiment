@@ -18,7 +18,7 @@ STRENGTHS = ["weak", "medium", "strong"]
 
 
 # Set environment variable in Python code
-os.environ["pepper"] = "137379782"
+os.environ["pepper"] = "25977022"
 
 _hash_mode = "sha256"
 

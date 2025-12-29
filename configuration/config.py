@@ -2,20 +2,27 @@
 Configuration handler.
 
 This module loads and validates configuration data, including:
-    - the active hashed mode and its associated parameters
+    - the active hash mode and its associated parameters
     - enabled or disabled protection mechanisms (e.g., rate limiting, lockouts, CAPTCHA, TOTP)
 
 It centralizes all configuration logic to ensure consistent and secure behavior across the system.
 """
 
-import json
 import os
+import json
 from pathlib import Path
 
 CONFIG_PATH = Path(__file__).parent / "config.json"
 
 
 class Config:
+    """
+    Loads, stores, and exposes validated configuration values.
+
+    Acts as a single source of truth for hashing, protections,
+    and password generation parameters.
+    """
+
     def __init__(self):
         with open(CONFIG_PATH, "r", encoding="utf-8") as f:
             self._data = json.load(f)
@@ -23,60 +30,74 @@ class Config:
 
     @property
     def raw(self) -> dict:
-        """Full raw config dict."""
+        """Return the full raw configuration dictionary."""
         return self._data
 
     @property
     def group_seed(self) -> str:
+        """Global seed used for experiments and administrative actions."""
         return self._data["group_seed"]
 
     @property
     def hash_mode(self) -> str:
+        """Active password hashing algorithm."""
         return self._data["hash_mode"]
 
     @property
     def hash_parameters(self) -> dict:
+        """All hash parameters grouped by hash mode."""
         return self._data["hash_parameters"]
 
     def get_hash_params(self, mode=None) -> dict:
-        """Return lockout_parameters for the currently configured hashed mode."""
+        """
+        Return hash parameters for the selected hash mode.
+
+        Args:
+            mode (str, optional): Hash mode override.
+
+        Returns:
+            dict: Hash parameters for the given mode.
+        """
         if mode is None:
             mode = self.hash_mode
         return self.hash_parameters.get(mode, {})
 
     @property
     def protections(self) -> dict:
-        """Enabled/disabled booleans."""
+        """Enabled/disabled protection flags."""
         return self._data["protections"]
 
     @property
     def protections_parameters(self) -> dict:
-        """Parameters for each protection."""
+        """Configuration parameters for each protection."""
         return self._data["protections_parameters"]
 
     @property
     def rate_limit_parameters(self) -> dict:
-        """Return the rate-limit parameters."""
+        """Rate limiting configuration."""
         return self.protections_parameters["rate_limit_parameters"]
 
     @property
     def lockout_parameters(self) -> dict:
-        """Return the lockout parameters."""
+        """Account lockout configuration."""
         return self.protections_parameters["lockout_parameters"]
 
     @property
     def captcha_parameters(self) -> dict:
-        """Return the captcha parameters."""
+        """CAPTCHA configuration."""
         return self.protections_parameters["captcha_parameters"]
 
     @property
     def totp_parameters(self) -> dict:
-        """Return the totp parameters."""
+        """TOTP configuration."""
         return self.protections_parameters["totp_parameters"]
 
     def get_protection_with_params(self) -> dict:
         """
-        Return { protection_name: parameters } ONLY for enabled protections.
+        Return enabled protections mapped to their parameters.
+
+        Only protections explicitly enabled in the configuration
+        are included in the result.
         """
         result = {}
         for name, enabled in self.protections.items():
@@ -94,10 +115,10 @@ class Config:
 
     def get_totp_user_count(self) -> int:
         """
-        Return the number of users to assign TOTP to, as defined in the config.
+        Return the number of users to assign TOTP to.
 
         Returns:
-            int: Number of users for TOTP.
+            int: Number of users requiring TOTP.
         """
         return self._data.get("protections_parameters", {}) \
                          .get("totp_parameters", {}) \
@@ -105,11 +126,11 @@ class Config:
 
     def get_environmental_pepper(self) -> str:
         """
-         Load the cryptographic pepper from environment variables.
+        Load and cache the cryptographic pepper from environment variables.
 
-         Returns:
-             str: The pepper value.
-         """
+        Returns:
+            str: Pepper value (empty string if unset).
+        """
         if self._pepper_cache is not None:
             return self._pepper_cache
 
@@ -120,16 +141,16 @@ class Config:
 
     def get_password_params(self, strength) -> dict:
         """
-        Return the password generation parameters for the given strength.
+        Return password generation parameters for a given strength.
 
         Args:
-            strength (str): "weak", "medium", or "strong"
+            strength (str): One of "weak", "medium", or "strong".
 
         Returns:
-            dict: Parameters.
+            dict: Password generation parameters.
 
         Raises:
-            ValueError: If strength is invalid or not found in config.
+            ValueError: If the strength is invalid or missing from config.
         """
         password_params = self._data.get("password_parameters", {}).get(strength)
         if not password_params:
@@ -138,4 +159,5 @@ class Config:
         return password_params
 
 
+# Singleton configuration instance used throughout the application
 config = Config()

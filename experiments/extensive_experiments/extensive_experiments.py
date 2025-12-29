@@ -1,3 +1,14 @@
+"""
+Experimental experiments' generator (future work).
+
+This module is NOT part of the core project logic.
+It is intended for future experimentation, benchmarking, and analysis of
+authentication defenses under different attack configurations.
+
+The code is kept here for extensibility and research purposes, but it is
+not used by the main application runtime.
+"""
+
 import json
 import itertools
 from collections import defaultdict
@@ -7,7 +18,7 @@ with open(r"C:\Users\barto\Documents\School\20940 - Introduction to Cyber Securi
     config = json.load(f)
 
 BASE_PROTECTIONS = {
-    "pepper": "137379782"
+    "pepper": "25977022"
 }
 
 DEFAULT_TEST_SEED = 51515151

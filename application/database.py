@@ -5,7 +5,18 @@ DB_PATH = "database.sqlite3"
 
 
 class Database:
+    """
+    SQLite database wrapper for user authentication data.
+    Handles connection setup and basic user queries.
+    """
+
     def __init__(self, database_path=DB_PATH):
+        """
+         Initialize the database connection and ensure required tables exist.
+
+         Args:
+             database_path (Path): Path to the SQLite database file.
+         """
         self._connect = sqlite3.connect(database_path, check_same_thread=False)
         self._connect.row_factory = sqlite3.Row
 
@@ -15,9 +26,11 @@ class Database:
 
     @property
     def connect(self) -> Connection:
+        """Return the active SQLite connection."""
         return self._connect
 
     def _initialize(self):
+        """Create required database tables if they do not already exist."""
         self._cursor.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -36,8 +49,9 @@ class Database:
             username (str): The username to add.
             hashed_password (str): The hashed password.
 
-        Raises:
-            sqlite3.IntegrityError: If the username already exists.
+        Returns:
+            bool: True if the user was inserted successfully, False if the
+            username already exists.
         """
         try:
             self._cursor.execute(
@@ -74,7 +88,7 @@ class Database:
         return None
 
     def close(self):
-        """Close the database cursor and connection."""
+        """Safely close the database cursor and connection."""
         if self._cursor:
             self._cursor.close()
             self._cursor = None
